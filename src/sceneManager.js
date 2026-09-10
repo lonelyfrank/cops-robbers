@@ -1,59 +1,110 @@
 import * as THREE from 'three';
 import { MAX_CROSSINGS, getMultiplier } from './gameMath.js';
-import { formatMultiplier } from './ui.js';
+import { formatMultiplier } from './format.js';
 import { CityStream } from './cityStream.js';
-import { disposeTileSharedAssets } from './cityTile.js';
+import { retainVoxelAssets } from './voxelModels.js';
 import { getCrossingX, getStopX, MAIN_ROAD_Z, sirenPulse } from './mapLayout.js';
 
-export { CROSSING_SPACING, getCrossingX, getStopX } from './mapLayout.js';
+const TUNING = Object.freeze({
+  pixelRatio: 1.6,
+  exposure: 1.24,
+  background: 0x06132c,
+  fogDensity: 0.0065,
+  cameraOffset: Object.freeze([-29, 33, 37]),
+  cameraResponse: 7.5,
+  focusAhead: 4.7,
+  captureZoom: 1.08,
+  ambientSky: 0x779edc,
+  ambientGround: 0x161e36,
+  ambientPower: 0.56,
+  rimColor: 0x809edb,
+  rimPower: 0.3,
+  keyColor: 0xffd5a5,
+  keyPower: 1950,
+  keyRange: 65,
+  keyAngle: 0.9,
+  captureDimming: 0.85,
+  shadowSize: 1024,
+  shadowFar: 70,
+  shadowNormalBias: 0.055,
+  shadowBias: -0.00008,
+  warmColor: 0xffb458,
+  warmPower: 26,
+  warmRange: 11,
+  warmHeight: 2.9,
+  warmOffsets: Object.freeze([
+    Object.freeze([-7, -1.3]),
+    Object.freeze([7, -0.5]),
+    Object.freeze([-6, MAIN_ROAD_Z + 3.3]),
+    Object.freeze([6, MAIN_ROAD_Z + 3.3]),
+  ]),
+  signalPower: 13,
+  signalRange: 9,
+  captureColor: 0x286bff,
+  captureRange: 23,
+  capturePower: Object.freeze([340, 225]),
+  flashBase: 0.035,
+  flashPower: 0.22,
+  reducedFlash: 0.09,
+});
 
-export function createSceneManager(canvas, container) {
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export function createSceneManager(canvas, container, { motion = { value: false } } = {}) {
+  let disposed = false;
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
     alpha: false,
     powerPreference: 'high-performance',
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, TUNING.pixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.24;
+  renderer.toneMappingExposure = TUNING.exposure;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const releaseVoxelAssets = retainVoxelAssets();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x06132c);
-  scene.fog = new THREE.FogExp2(0x06132c, 0.0065);
+  scene.background = new THREE.Color(TUNING.background);
+  scene.fog = new THREE.FogExp2(TUNING.background, TUNING.fogDensity);
   const camera = new THREE.OrthographicCamera(-40, 40, 20, -20, 0.1, 190);
   const focus = new THREE.Vector3(0, 1.1, 1.1),
-    cameraOffset = new THREE.Vector3(-29, 33, 37);
+    cameraOffset = new THREE.Vector3(...TUNING.cameraOffset);
   // Cool ambient light keeps adjacent streets readable; the warm key marks the active district.
-  scene.add(new THREE.HemisphereLight(0x779edc, 0x161e36, 0.56));
-  const rim = new THREE.DirectionalLight(0x809edb, 0.3);
+  scene.add(
+    new THREE.HemisphereLight(TUNING.ambientSky, TUNING.ambientGround, TUNING.ambientPower),
+  );
+  const rim = new THREE.DirectionalLight(TUNING.rimColor, TUNING.rimPower);
   rim.position.set(4, 18, -12);
   scene.add(rim);
   // One warm key for the occupied tile. All other lights are fixed, reused pools.
-  const key = new THREE.SpotLight(0xffd5a5, 1950, 65, 0.9, 1, 2);
+  const key = new THREE.SpotLight(
+    TUNING.keyColor,
+    TUNING.keyPower,
+    TUNING.keyRange,
+    TUNING.keyAngle,
+    1,
+    2,
+  );
   key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.mapSize.set(TUNING.shadowSize, TUNING.shadowSize);
   key.shadow.camera.near = 2;
-  key.shadow.camera.far = 70;
-  key.shadow.normalBias = 0.055;
-  key.shadow.bias = -0.00008;
+  key.shadow.camera.far = TUNING.shadowFar;
+  key.shadow.normalBias = TUNING.shadowNormalBias;
+  key.shadow.bias = TUNING.shadowBias;
   scene.add(key, key.target);
   const warmLights = Array.from({ length: 4 }, () => {
-    const light = new THREE.PointLight(0xffb458, 0, 11, 2);
+    const light = new THREE.PointLight(TUNING.warmColor, 0, TUNING.warmRange, 2);
     scene.add(light);
     return light;
   });
-  const signalLight = new THREE.PointLight(0xffba39, 0, 9, 2);
+  const signalLight = new THREE.PointLight(0xffba39, 0, TUNING.signalRange, 2);
   scene.add(signalLight);
   const captureLights = Array.from({ length: 2 }, () => {
-    const light = new THREE.PointLight(0x286bff, 0, 23, 2);
+    const light = new THREE.PointLight(TUNING.captureColor, 0, TUNING.captureRange, 2);
     scene.add(light);
     return light;
   });
-  const stream = new CityStream(scene, { reducedMotion });
+  const stream = new CityStream(scene, { reducedMotion: motion.value });
   const indicator = new THREE.Mesh(
     new THREE.RingGeometry(0.67, 0.79, 4),
     new THREE.MeshBasicMaterial({
@@ -95,9 +146,7 @@ export function createSceneManager(canvas, container) {
     height = 1,
     followX = getStopX(0),
     thief = null,
-    phase = 'idle',
-    lastCaption = '',
-    captureTime = 0;
+    lastCaption = '';
   function resize() {
     width = Math.max(1, container.clientWidth);
     height = Math.max(1, container.clientHeight);
@@ -114,8 +163,6 @@ export function createSceneManager(canvas, container) {
   observer.observe(container);
   resize();
   function setPhase(value) {
-    if (value === 'caught' && phase !== 'caught') captureTime = 0;
-    phase = value;
     if (['idle', 'running', 'ready', 'escaping'].includes(value)) stream.setCaught(false);
     else if (value === 'caught') stream.setCaught(true);
     // Keep blue capture flashes through a losing result, until replay/reset.
@@ -124,8 +171,6 @@ export function createSceneManager(canvas, container) {
     stream.reset();
     followX = getStopX(0);
     focus.set(0, 1.1, 1.1);
-    phase = 'idle';
-    captureTime = 0;
     camera.zoom = 1;
     camera.updateProjectionMatrix();
     captureLights.forEach((light) => {
@@ -164,15 +209,20 @@ export function createSceneManager(canvas, container) {
     }
   }
   function update(dt, elapsed) {
+    if (disposed) return;
+    const reducedMotion = motion.value;
+    stream.reducedMotion = reducedMotion;
     if (thief) stream.setPlayerX(thief.position.x);
     stream.update(dt);
     const occupiedX = getCrossingX(stream.current),
       lightX = stream.lighting.focusX.value,
       capture = stream.lighting.capture.value;
     // Camera movement is continuous; district roles change at the road connector.
-    const factor = reducedMotion ? 1 : 1 - Math.exp(-dt * 7.5);
-    focus.x += ((stream.caught && thief ? thief.position.x : followX) + 4.7 - focus.x) * factor;
-    const zoomTarget = stream.caught && !reducedMotion ? 1.08 : 1;
+    const factor = reducedMotion ? 1 : 1 - Math.exp(-dt * TUNING.cameraResponse);
+    focus.x +=
+      ((stream.caught && thief ? thief.position.x : followX) + TUNING.focusAhead - focus.x) *
+      factor;
+    const zoomTarget = stream.caught && !reducedMotion ? TUNING.captureZoom : 1;
     const zoom = camera.zoom + (zoomTarget - camera.zoom) * factor;
     if (Math.abs(zoom - camera.zoom) > 0.00001) {
       camera.zoom = zoom;
@@ -183,30 +233,28 @@ export function createSceneManager(canvas, container) {
     camera.updateMatrixWorld();
     key.position.set(lightX - 3, 23, 1);
     key.target.position.set(lightX, 0, 0);
-    key.intensity = 1950 * (1 - 0.85 * capture);
-    const offsets = [
-      [-7, -1.3],
-      [7, -0.5],
-      [-6, MAIN_ROAD_Z + 3.3],
-      [6, MAIN_ROAD_Z + 3.3],
-    ];
+    key.intensity = TUNING.keyPower * (1 - TUNING.captureDimming * capture);
+    const offsets = TUNING.warmOffsets;
     for (let i = 0; i < warmLights.length; i++) {
-      warmLights[i].position.set(lightX + offsets[i][0], 2.9, offsets[i][1]);
-      warmLights[i].intensity = 26 * (1 - 0.85 * capture);
+      warmLights[i].position.set(lightX + offsets[i][0], TUNING.warmHeight, offsets[i][1]);
+      warmLights[i].intensity = TUNING.warmPower * (1 - TUNING.captureDimming * capture);
     }
     const signal = stream.activeTile.signal;
     signalLight.position.set(occupiedX + 3.72, 2.8, MAIN_ROAD_Z - 3.1);
     signalLight.color.set(signal === 'green' ? 0x8bff7e : signal === 'red' ? 0xff365b : 0xffbd3f);
-    signalLight.intensity = signal === 'off' ? 0 : 13;
+    signalLight.intensity = signal === 'off' ? 0 : TUNING.signalPower;
     const caught = stream.caught;
-    if (caught) captureTime += dt;
-    const pulse = sirenPulse(captureTime, reducedMotion);
+    const pulse = sirenPulse(elapsed, reducedMotion);
     captureLights[0].position.set(occupiedX - 5, 3.5, MAIN_ROAD_Z - 1);
     captureLights[1].position.set(occupiedX + 4, 4, MAIN_ROAD_Z + 2);
-    captureLights[0].intensity = caught ? 340 * pulse : 0;
-    captureLights[1].intensity = caught ? 225 * sirenPulse(captureTime, reducedMotion, 1) : 0;
+    captureLights[0].intensity = caught ? TUNING.capturePower[0] * pulse : 0;
+    captureLights[1].intensity = caught
+      ? TUNING.capturePower[1] * sirenPulse(elapsed, reducedMotion, 1)
+      : 0;
     if (flash)
-      flash.style.opacity = caught ? String(reducedMotion ? 0.09 : 0.035 + pulse * 0.22) : '0';
+      flash.style.opacity = caught
+        ? String(reducedMotion ? TUNING.reducedFlash : TUNING.flashBase + pulse * TUNING.flashPower)
+        : '0';
     if (thief) {
       indicator.visible = thief.visible && thief.position.y < 1.5;
       indicator.position.set(thief.position.x, 0.143, thief.position.z);
@@ -217,21 +265,19 @@ export function createSceneManager(canvas, container) {
     renderer.render(scene, camera);
   }
   function dispose() {
+    if (disposed) return;
+    disposed = true;
     observer.disconnect();
     stream.dispose();
-    disposeTileSharedAssets();
-    const geometries = new Set(),
-      materials = new Set();
-    scene.traverse((object) => {
-      if (object.geometry) geometries.add(object.geometry);
-      if (object.material)
-        (Array.isArray(object.material) ? object.material : [object.material]).forEach((m) =>
-          materials.add(m),
-        );
-    });
-    geometries.forEach((g) => g.dispose());
-    materials.forEach((m) => m.dispose());
+    // Explicitly owned meshes; the shared pool is released only after its last scene.
+    for (const mesh of [indicator, roadMultiplier]) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
+    key.shadow.dispose();
     multiplierTexture.dispose();
+    scene.clear();
+    releaseVoxelAssets();
     renderer.dispose();
     if (flash) flash.style.opacity = '0';
   }
@@ -241,7 +287,9 @@ export function createSceneManager(canvas, container) {
     camera,
     renderer,
     stream,
-    reducedMotion,
+    get reducedMotion() {
+      return motion.value;
+    },
     reset,
     update,
     dispose,

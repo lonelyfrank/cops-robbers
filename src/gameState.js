@@ -113,19 +113,25 @@ export class GameState {
   }
   finishCrossing() {
     if (this.data.phase !== PHASES.RUNNING) return false;
-    this.data.crossing++;
-    this.data.multiplier = getMultiplier(this.data.crossing, this.data.difficulty);
+    const crossing = this.data.crossing + 1;
+    if (crossing === MAX_CROSSINGS) return this.#settleCashout(crossing);
+    this.data.crossing = crossing;
+    this.data.multiplier = getMultiplier(crossing, this.data.difficulty);
     this.data.phase = PHASES.READY;
-    if (this.data.crossing === MAX_CROSSINGS) return this.cashout();
     this.notify();
     return true;
   }
   cashout() {
     if (this.data.phase !== PHASES.READY || this.data.crossing < 1) return false;
-    const payout = calculatePayout(this.data.stake, this.data.crossing, this.data.difficulty);
+    return this.#settleCashout(this.data.crossing);
+  }
+  #settleCashout(crossing) {
+    const payout = calculatePayout(this.data.stake, crossing, this.data.difficulty);
     if (!Number.isSafeInteger(this.data.balance + payout))
       throw new RangeError('Saldo fuori limite.');
     Object.assign(this.data, {
+      crossing,
+      multiplier: getMultiplier(crossing, this.data.difficulty),
       phase: PHASES.ESCAPING,
       payout,
       balance: this.data.balance + payout,

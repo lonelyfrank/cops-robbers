@@ -1,20 +1,30 @@
 import './style.css';
 import { GameState, PHASES } from './gameState.js';
-import { createSceneManager, getStopX } from './sceneManager.js';
+import { createSceneManager } from './sceneManager.js';
+import { getStopX } from './mapLayout.js';
 import { CharacterController } from './characterController.js';
 import { createUI } from './ui.js';
+import { createMotionPreference } from './motionPreference.js';
 
 const game = new GameState();
+const motion = createMotionPreference(),
+  events = new AbortController();
+const canvas = document.getElementById('game-canvas');
+let unsubscribeScene = () => {};
 let sceneManager,
   characters,
   animationFrame,
   failed = false;
-const ui = createUI(game, {
-  start: (amount) => game.start(amount),
-  advance: () => game.advance(),
-  cashout: () => game.cashout(),
-  reset: () => game.resetDemo(),
-});
+const ui = createUI(
+  game,
+  {
+    start: (amount) => game.start(amount),
+    advance: () => game.advance(),
+    cashout: () => game.cashout(),
+    reset: () => game.resetDemo(),
+  },
+  { motion },
+);
 
 let previousPhase = '',
   previousRound = -1;
@@ -45,19 +55,20 @@ function fail(message, error) {
   failed = true;
   cancelAnimationFrame(animationFrame);
   ui.showError(message);
+  disposeScene();
   if (error) console.error('Cops&Robbers:', error);
 }
 
 try {
-  sceneManager = createSceneManager(
-    document.getElementById('game-canvas'),
-    document.getElementById('stage'),
-  );
+  sceneManager = createSceneManager(canvas, document.getElementById('stage'), { motion });
   characters = new CharacterController(sceneManager.scene, {
     reducedMotion: sceneManager.reducedMotion,
   });
   sceneManager.setThief(characters.thief.root);
-  game.subscribe(synchronizeScene);
+  unsubscribeScene = game.subscribe(synchronizeScene);
+  motion.subscribe((value) => {
+    characters.reducedMotion = value;
+  });
   let lastTime = performance.now(),
     elapsed = 0;
   const frame = (now) => {
@@ -68,7 +79,7 @@ try {
       lastTime = now;
       if (!document.hidden) {
         elapsed += dt;
-        characters.update(dt);
+        characters.update(dt, elapsed);
         const s = game.snapshot;
         sceneManager.follow(
           s.phase === PHASES.RUNNING ? characters.thief.root.position.x : getStopX(s.crossing),
@@ -87,15 +98,23 @@ try {
   sceneManager.update(0, 0);
   ui.setReady(true);
   animationFrame = requestAnimationFrame(frame);
-  document.addEventListener('visibilitychange', () => {
-    lastTime = performance.now();
-  });
-  document.getElementById('game-canvas').addEventListener('webglcontextlost', (event) => {
-    event.preventDefault();
-    fail(
-      'La connessione alla grafica è stata interrotta. Ricarica per riavviare la demo con 1.000 crediti virtuali.',
-    );
-  });
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      lastTime = performance.now();
+    },
+    { signal: events.signal },
+  );
+  canvas.addEventListener(
+    'webglcontextlost',
+    (event) => {
+      event.preventDefault();
+      fail(
+        'La connessione alla grafica è stata interrotta. Ricarica per riavviare la demo con 1.000 crediti virtuali.',
+      );
+    },
+    { signal: events.signal },
+  );
 } catch (error) {
   fail(
     'Questo browser non riesce ad avviare WebGL 2. Prova un browser aggiornato con accelerazione grafica attiva.',
@@ -103,9 +122,16 @@ try {
   );
 }
 
+function disposeScene() {
+  events.abort();
+  unsubscribeScene();
+  motion.dispose();
+  sceneManager?.dispose();
+}
+
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
     cancelAnimationFrame(animationFrame);
     ui.dispose();
-    sceneManager?.dispose();
+    disposeScene();
   });

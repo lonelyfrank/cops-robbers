@@ -14,17 +14,17 @@ Ogni modulo è un diorama quadrato di 26 × 26 unità con un solo incrocio, tre 
 
 Il cambio di ruolo dipende dalla **posizione reale del ladro**, non dal numero visualizzato nel percorso. Dopo un verde, il ladro attraversa l'incrocio e raggiunge la fermata prima di quello successivo. Quando oltrepassa il confine del modulo, la nuova zona riceve la luce principale, quella lasciata alle spalle torna alla luce tenue e viene preparato il prossimo modulo.
 
-La luce segue il ladro con una sfumatura continua nello spazio, anche sui bordi condivisi: il centro resta in evidenza e la luminosità diminuisce gradualmente verso i quartieri adiacenti. Il nuovo modulo risale prima come base piatta, poi edifici e arredo crescono dal terreno con un leggero ritardo fra i gruppi. In uscita la sequenza si inverte: gli oggetti rientrano nella base, che solo dopo scende e scompare. A regime sono presenti **tre moduli**; durante la dissolvenza ne può esistere temporaneamente **un quarto**, poi materiali e buffer delle istanze obsolete vengono liberati. Le geometrie condivise rimangono disponibili per i moduli ancora visibili.
+La luce segue il ladro con una sfumatura continua nello spazio, anche sui bordi condivisi: il centro resta in evidenza e la luminosità diminuisce gradualmente verso i quartieri adiacenti. Il nuovo modulo risale prima come base piatta, poi edifici e arredo crescono dal terreno con un leggero ritardo fra i gruppi. In uscita la sequenza si inverte: gli oggetti rientrano nella base, che solo dopo scende e scompare. A regime sono presenti **tre moduli**; durante la dissolvenza ne può esistere temporaneamente **un quarto**, poi materiali e buffer delle istanze obsolete vengono liberati. Le geometrie condivise rimangono disponibili per i moduli ancora visibili. La texture degli aloni appartiene allo stream. Le cache voxel sono rilasciate alla chiusura dell’ultima scena e ricreate per il montaggio successivo, evitando risorse GPU e listener residui durante HMR.
 
 Anche all'inizio e alla fine rimangono tre moduli: un quartiere di avvicinamento prima del primo incrocio e un quartiere di uscita lievemente illuminato dopo l'ultimo. Questi due moduli scenografici non aggiungono puntate o incroci al percorso di gioco.
 
-Il rosso di attesa lascia passare le auto in perpendicolare. Al clic con esito verde si aprono insieme l’incrocio del ladro e quello della pattuglia precedente: entrambi avanzano con la stessa progressione e si fermano di nuovo al rosso. Le auto già impegnate liberano l’incrocio, le altre si fermano prima delle strisce. In caso di perdita il traffico civile libera gli accessi, la luce calda si attenua e **quattro pattuglie circondano il ladro**: quella alle spalle si avvicina, una entra dal fondo della strada di fronte e altre due arrivano dai lati dell’incrocio. La camera stringe leggermente sul ladro e il riepilogo compare in basso per lasciare visibile l’accerchiamento. Un riflesso blu pulsa ai bordi della scena. L'effetto continua nel risultato di arresto e si azzera alla nuova partita o al ripristino. La preferenza di movimento ridotto rende le luci stabili ed elimina risalite e dissolvenze.
+Il rosso di attesa lascia passare le auto in perpendicolare. Al clic con esito verde si aprono insieme l’incrocio del ladro e quello della pattuglia precedente: entrambi avanzano con la stessa progressione e si fermano di nuovo al rosso. Le auto già impegnate liberano l’incrocio, le altre si fermano prima delle strisce. In caso di perdita il traffico civile libera gli accessi, la luce calda si attenua e **quattro pattuglie circondano il ladro**: quella alle spalle si avvicina, una entra dal fondo della strada di fronte e altre due arrivano dai lati dell’incrocio. La camera stringe leggermente sul ladro e il riepilogo compare in basso per lasciare visibile l’accerchiamento. Un riflesso blu pulsa ai bordi della scena. L'effetto continua nel risultato di arresto e si azzera alla nuova partita o al ripristino. La preferenza di movimento ridotto rende le luci stabili ed elimina risalite e dissolvenze; i cambiamenti di preferenza vengono recepiti anche durante la sessione.
 
 Ogni modulo varia in modo deterministico colori, larghezze e piani degli edifici, tende dei negozi, scale antincendio, serbatoi sui tetti e arredo urbano (pensilina, ingresso metro o edicola). Le strade mantengono raccordi identici. Il traffico e le decorazioni non influenzano le probabilità di gioco.
 
 La sacca è ancorata alla schiena e cresce gradualmente con incroci e moltiplicatore raggiunti; la crescita rimane contenuta e si azzera alla nuova partita.
 
-Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/mapLayout.js`. Geometria e palette sono in `src/cityTile.js`; la finestra di caricamento e la rimozione delle risorse sono in `src/cityStream.js`.
+Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/mapLayout.js`. Geometria e palette sono in `src/districtGeometry.js`; la finestra di caricamento e la rimozione delle risorse sono in `src/cityStream.js`.
 
 ## Prossimi sviluppi
 
@@ -45,13 +45,15 @@ Per provare il gioco senza installazione, apri **cops-and-robbers.html** in un b
 
 ## Comandi disponibili
 
-| Comando                    | Risultato                                                             |
-| -------------------------- | --------------------------------------------------------------------- |
-| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                        |
-| `npm test`                 | Test deterministici della matematica, dello stato e delle animazioni. |
-| `npm run build`            | Build statica di produzione nella cartella `dist/`.                   |
-| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.           |
-| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                     |
+| Comando                    | Risultato                                                               |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                          |
+| `npm run lint`             | Verifica la formattazione con Prettier (non è analisi statica ESLint).  |
+| `npm run format`           | Applica lo stile condiviso ai sorgenti; esclude build e memoria locale. |
+| `npm test`                 | Test deterministici della matematica, dello stato e delle animazioni.   |
+| `npm run build`            | Build statica di produzione nella cartella `dist/`.                     |
+| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.             |
+| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                       |
 
 La normale build `dist/` va servita via HTTP. Per l'apertura diretta da disco, usa l'HTML autonomo. Dopo modifiche ai sorgenti, rigenera entrambe le build se vuoi distribuirle aggiornate.
 
@@ -88,16 +90,18 @@ P(n, d) × M_totale(n, d) = 0.96
 | RTP target                             | `0.96`                   | `RTP_TARGET`, `gameMath.js`                |
 | Probabilità del primo verde            | `0.95`                   | `INITIAL_GREEN_PROBABILITY`, `gameMath.js` |
 | Decadimento facile / medio / difficile | `0.035 / 0.065 / 0.10`   | `DIFFICULTIES`, `gameMath.js`              |
-| Probabilità minima                     | `0.12`                   | `MIN_GREEN_PROBABILITY`, `gameMath.js`     |
+| Pavimento difensivo della probabilità  | `0.12`                   | `MIN_GREEN_PROBABILITY`, `gameMath.js`     |
 | Incroci massimi                        | `12`                     | `MAX_CROSSINGS`, `gameMath.js`             |
 | Saldo iniziale                         | `100000` centesimi di CR | `INITIAL_BALANCE`, `gameState.js`          |
 | Puntata minima / massima               | `1 / 1000000 CR`         | `MIN_BET` / `MAX_BET`, `gameState.js`      |
+
+Il pavimento `MIN_GREEN_PROBABILITY = 0.12` è una guardia difensiva per future curve: nel percorso attuale non interviene; la probabilità più bassa è circa 0,316 (difficile, dodicesimo incrocio).
 
 `RTP_TARGET` cambia il livello dei moltiplicatori; i `decay` cambiano la velocità di crescita del rischio. Sono volutamente parametri separati. Se abbassi il target sotto la probabilità iniziale, il primo moltiplicatore può scendere sotto 1: per mantenere il primo passaggio in utile, calibra anche la probabilità iniziale.
 
 Il grande moltiplicatore a video è **sempre il totale effettivamente pagabile**: `getMultiplier()` restituisce `RTP_TARGET / P(n)` e `calculatePayout()` applica questo valore alla puntata. Non sono previsti bonus separati. La rimozione dell’elicottero non modifica probabilità o importi degli incassi.
 
-Il saldo è un intero in centesimi di CR. `calculatePayout()` arrotonda per difetto solo all'incasso, con scarto inferiore a 0,01 CR. Il 96% è il target teorico prima di questa quantizzazione; il ritorno effettivo arrotondato è leggermente inferiore. I moltiplicatori in interfaccia hanno due decimali per leggibilità, ma il calcolo usa il valore completo.
+Il saldo è un intero in centesimi di CR. `calculatePayout()` arrotonda per difetto solo all'incasso, con scarto inferiore a 0,01 CR. Il 96% è il target teorico prima di questa quantizzazione. Il minimo RTP effettivo fra le 36 strategie di incasso è circa 95,54% con puntata da 1 CR (difficile, incasso al secondo incrocio), 95,97% con 25 CR e 96,00% arrotondato con 1.000 CR. Non è un unico RTP arrotondato per tutte le strategie. I moltiplicatori in interfaccia hanno due decimali per leggibilità, ma il calcolo usa il valore completo.
 
 La formula vale per una strategia di incasso a ciascun traguardo consentito. Non garantisce un risultato su una singola partita o una breve sessione. Non è permesso incassare prima del primo verde o durante una risoluzione.
 
@@ -112,6 +116,9 @@ Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni 
 | `src/sceneManager.js`         | Renderer WebGL, camera isometrica, illuminazione del modulo occupato, riflesso blu e moltiplicatore sull'asfalto tra le strisce pedonali. |
 | `src/mapLayout.js`            | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                             |
 | `src/cityEffects.js`          | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                               |
+| `src/districtGeometry.js`     | Geometria dei quartieri, fondazioni, architettura, arredo e vicoli sui due lati della fermata.                                            |
+| `src/format.js`               | Formatter numerici condivisi, indipendenti dal DOM.                                                                                       |
+| `src/motionPreference.js`     | Unica preferenza di movimento ridotto, aggiornata anche a runtime.                                                                        |
 | `src/cityTile.js`             | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo.                           |
 | `src/trafficController.js`    | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce.                                                    |
 | `src/cityStream.js`           | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete.                                        |
@@ -139,8 +146,10 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 ## Verifica
 
-**48 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce e la crescita degli edifici ancorata al terreno prima della caduta della base.
+**57 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
 
 I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico.
+
+La workflow `.github/workflows/checks.yml` esegue formattazione, test, build e verifica che l’HTML autonomo committato sia aggiornato. L’esecuzione remota partirà al prossimo push. Dettagli della revisione e limiti delle misure: [revisione tecnica](docs/TECHNICAL_REVIEW.md).
 
 Documentazione delle dipendenze: [Vite](https://vite.dev/guide/), [build Vite](https://vite.dev/guide/build), [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html). Vedi `THIRD_PARTY_NOTICES.md` per le licenze incluse.

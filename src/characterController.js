@@ -47,7 +47,6 @@ export class CharacterController {
   reset() {
     this.animation = null;
     this.arrested = false;
-    this.time = 0;
     this.thief.root.position.set(getStopX(0), ROAD_Y, RUNNER_Z);
     this.thief.root.rotation.set(0, 0, 0);
     this.thief.root.visible = true;
@@ -96,7 +95,6 @@ export class CharacterController {
   caught(n, onComplete) {
     const x = getCrossingX(n);
     this.arrested = true;
-    this.time = 0;
     this.police.root.visible = false;
     this.police.root.position.set(x + TILE_SIZE * 2, 0.03, RUNNER_Z);
     this.police.root.rotation.y = -Math.PI / 2;
@@ -109,6 +107,8 @@ export class CharacterController {
       kind: 'caught',
       elapsed: 0,
       duration: this.reducedMotion ? 0.85 : 2.2,
+      handsFrom: this.thief.arms.map((arm) => arm.rotation.z),
+      bodyFrom: this.thief.body.rotation.z,
       crossingX: x,
       captureX: x - 0.2,
       fromX: this.thief.root.position.x,
@@ -122,7 +122,6 @@ export class CharacterController {
       kind: 'alley',
       elapsed: 0,
       duration: this.reducedMotion ? 0.65 : 1.05,
-      x: this.thief.root.position.x,
       z: this.thief.root.position.z,
       onComplete,
     };
@@ -136,8 +135,8 @@ export class CharacterController {
     this.thief.body.position.y = Math.abs(wave) * 0.085;
     this.thief.body.rotation.z = -0.08 * strength;
   }
-  update(dt) {
-    this.time += dt;
+  update(dt, elapsed = this.time + dt) {
+    this.time = elapsed;
     this.lootScale +=
       (this.lootTarget - this.lootScale) * (this.reducedMotion ? 1 : 1 - Math.exp(-dt * 7));
     this.thief.lootBag.scale.set(this.lootScale, 1 + (this.lootScale - 1) * 0.72, this.lootScale);
@@ -170,11 +169,13 @@ export class CharacterController {
       south.root.position.z = lerp(RUNNER_Z + 22, RUNNER_Z + 3.4, smooth((p - 0.22) / 0.6));
       north.root.visible = north.root.position.z >= -TILE_SIZE / 2 - 1.5;
       south.root.visible = south.root.position.z <= TILE_SIZE / 2 + 1.5;
-      const handsUp = smooth((p - 0.3) / 0.35);
-      this.thief.arms.forEach((arm) => {
-        arm.rotation.z = lerp(arm.rotation.z, -2.65, handsUp);
-      });
-      this.thief.body.rotation.z = lerp(this.thief.body.rotation.z, 0.06, handsUp);
+      const handsUp = smooth((p - 0.32) / 0.35);
+      if (p >= 0.32) {
+        this.thief.arms.forEach((arm, i) => {
+          arm.rotation.z = lerp(a.handsFrom[i], -2.65, handsUp);
+        });
+        this.thief.body.rotation.z = lerp(a.bodyFrom, 0.06, handsUp);
+      }
     } else if (a.kind === 'alley') {
       this.thief.root.rotation.y = (-Math.PI / 2) * smooth(p * 3);
       this.thief.root.position.z = lerp(a.z, 12.7, smooth(p));

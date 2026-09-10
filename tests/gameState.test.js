@@ -198,3 +198,21 @@ test('The production random generator returns finite numbers in [0, 1)', () => {
     assert.ok(Number.isFinite(value) && value >= 0 && value < 1);
   }
 });
+
+test('The final crossing emits one settled state and never exposes READY at twelve', () => {
+  const g = new GameState({ random: () => 0 }),
+    observed = [];
+  g.subscribe((s) => observed.push(s));
+  g.start(2500);
+  for (let n = 1; n < MAX_CROSSINGS; n++) {
+    g.finishCrossing();
+    g.advance();
+  }
+  const before = observed.length;
+  g.finishCrossing();
+  assert.equal(observed.length, before + 1);
+  assert.equal(g.snapshot.phase, PHASES.ESCAPING);
+  assert.ok(observed.every((s) => !(s.phase === PHASES.READY && s.crossing === MAX_CROSSINGS)));
+  assert.equal(g.snapshot.history.length, 1);
+  assert.equal(g.cashout(), false);
+});

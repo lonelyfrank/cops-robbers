@@ -1,8 +1,23 @@
 import * as THREE from 'three';
 
 /** Shared unit geometry and materials keep the voxel props inexpensive. */
-export const unitBox = new THREE.BoxGeometry(1, 1, 1);
+export let unitBox = new THREE.BoxGeometry(1, 1, 1);
 const materialCache = new Map();
+let sceneOwners = 0;
+/** Release cached GPU assets only after the last scene; recreate CPU assets for the next mount. */
+export function retainVoxelAssets() {
+  sceneOwners++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    if (--sceneOwners !== 0) return;
+    unitBox.dispose();
+    for (const material of materialCache.values()) material.dispose();
+    materialCache.clear();
+    unitBox = new THREE.BoxGeometry(1, 1, 1);
+  };
+}
 export function material(color, roughness = 0.85) {
   const key = `${color}:${roughness}`;
   if (!materialCache.has(key))

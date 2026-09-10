@@ -1,6 +1,7 @@
 /** All probability / payout functions are pure. No Three.js or browser imports. */
 export const RTP_TARGET = 0.96;
 export const INITIAL_GREEN_PROBABILITY = 0.95;
+// Defensive floor for future curve changes; not reached within the current twelve crossings.
 export const MIN_GREEN_PROBABILITY = 0.12;
 export const MAX_CROSSINGS = 12;
 export const DIFFICULTIES = Object.freeze({

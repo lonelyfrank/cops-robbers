@@ -9,18 +9,7 @@ import {
 } from './gameMath.js';
 import { PHASES, MIN_BET, MAX_BET } from './gameState.js';
 
-const moneyFormatter = new Intl.NumberFormat('it-IT', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const numberFormatter = new Intl.NumberFormat('it-IT', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const percentFormatter = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 });
-export const formatMoney = (minor) => moneyFormatter.format(minor / 100);
-export const formatMultiplier = (value) => numberFormatter.format(value);
-const $ = (id) => document.getElementById(id);
+import { formatMoney, formatMultiplier, formatPercent } from './format.js';
 
 export function parseBet(text) {
   const normalized = String(text).trim().replace(',', '.');
@@ -29,18 +18,70 @@ export function parseBet(text) {
   return Number.isSafeInteger(minor) ? minor : null;
 }
 
-export function createUI(game, actions) {
+export function createUI(game, actions, { motion = { value: false } } = {}) {
+  const dom = Object.freeze(
+    Object.fromEntries(
+      [
+        'action-caption',
+        'balance',
+        'bet-error',
+        'bet-fieldset',
+        'bet-input',
+        'cashout-amount',
+        'cashout-button',
+        'close-rules',
+        'crossing-count',
+        'difficulty-fieldset',
+        'difficulty-hint',
+        'game-controls',
+        'help-button',
+        'history',
+        'main-button',
+        'main-button-label',
+        'multiplier',
+        'next-label',
+        'next-multiplier',
+        'next-probability',
+        'phase-label',
+        'potential',
+        'potential-label',
+        'reload-button',
+        'reset-button',
+        'result-banner',
+        'result-description',
+        'result-eyebrow',
+        'result-title',
+        'risk-caption',
+        'risk-table-body',
+        'route',
+        'rtp-label',
+        'rules-button',
+        'rules-dialog',
+        'scene-loader',
+        'status-text',
+        'webgl-error',
+        'webgl-error-text',
+      ].map((id) => [id, document.getElementById(id)]),
+    ),
+  );
+  const nextSignal = document.querySelector('.next-signal');
+  const betButtons = [...document.querySelectorAll('[data-bet]')];
+  const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
+  const events = new AbortController();
+  const on = (target, type, handler) =>
+    target.addEventListener(type, handler, { signal: events.signal });
   let ready = false,
     previousPhase = '',
     previousRound = -1,
     previousCrossing = -1,
-    historyKey = '',
+    historyKey = null,
     routeKey = '',
     lastStatus = '';
-  const input = $('bet-input'),
-    mainButton = $('main-button'),
-    cashoutButton = $('cashout-button');
-  const ruleDialog = $('rules-dialog');
+  const input = dom['bet-input'],
+    mainButton = dom['main-button'],
+    cashoutButton = dom['cashout-button'];
+  const ruleDialog = dom['rules-dialog'];
+  dom['route'].replaceChildren();
   const routeItems = Array.from({ length: MAX_CROSSINGS }, (_, i) => {
     const item = document.createElement('li');
     item.className = 'route-step';
@@ -50,7 +91,7 @@ export function createUI(game, actions) {
     const multi = document.createElement('span');
     multi.className = 'step-multi';
     item.append(number, multi);
-    $('route').appendChild(item);
+    dom['route'].appendChild(item);
     return { item, number, multi };
   });
   function validateBet(showError = false) {
@@ -63,20 +104,20 @@ export function createUI(game, actions) {
       error = 'Crediti insufficienti. Riduci la puntata o ripristina la demo.';
     else if (value > MAX_BET) error = 'Puntata massima: 1.000.000,00 CR.';
     if (showError) {
-      $('bet-error').textContent = error;
+      dom['bet-error'].textContent = error;
       input.setAttribute('aria-invalid', String(Boolean(error)));
     }
     return error ? null : value;
   }
   function openRules() {
     const s = game.snapshot;
-    $('risk-caption').textContent = `Probabilità · ${DIFFICULTIES[s.difficulty].label}`;
-    $('risk-table-body').replaceChildren(
+    dom['risk-caption'].textContent = `Probabilità · ${DIFFICULTIES[s.difficulty].label}`;
+    dom['risk-table-body'].replaceChildren(
       ...buildRiskTable(s.difficulty).map((row) => {
         const tr = document.createElement('tr');
         const values = [
           String(row.n).padStart(2, '0'),
-          `${percentFormatter.format(row.greenProbability * 100)}%`,
+          `${formatPercent(row.greenProbability)}%`,
           `${(row.cumulativeProbability * 100).toLocaleString('it-IT', { maximumFractionDigits: 3 })}%`,
           `${row.totalMultiplier.toLocaleString('it-IT', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}×`,
         ];
@@ -90,10 +131,10 @@ export function createUI(game, actions) {
     );
     ruleDialog.showModal();
   }
-  $('help-button').addEventListener('click', openRules);
-  $('rules-button').addEventListener('click', openRules);
-  $('close-rules').addEventListener('click', () => ruleDialog.close());
-  ruleDialog.addEventListener('click', (event) => {
+  on(dom['help-button'], 'click', openRules);
+  on(dom['rules-button'], 'click', openRules);
+  on(dom['close-rules'], 'click', () => ruleDialog.close());
+  on(ruleDialog, 'click', (event) => {
     if (event.target === ruleDialog) {
       const bounds = ruleDialog.getBoundingClientRect();
       if (
@@ -105,18 +146,17 @@ export function createUI(game, actions) {
         ruleDialog.close();
     }
   });
-  $('reload-button').addEventListener('click', () => location.reload());
-  input.addEventListener('input', () => {
+  on(dom['reload-button'], 'click', () => location.reload());
+  on(input, 'input', () => {
     const amount = validateBet(true);
-    if (amount !== null) game.setBet(amount);
-    render(game.snapshot);
+    if (amount === null || !game.setBet(amount)) render(game.snapshot);
   });
-  input.addEventListener('blur', () => {
+  on(input, 'blur', () => {
     const amount = validateBet(true);
     if (amount !== null) input.value = (amount / 100).toFixed(2);
   });
-  for (const button of document.querySelectorAll('[data-bet]'))
-    button.addEventListener('click', () => {
+  for (const button of betButtons)
+    on(button, 'click', () => {
       const s = game.snapshot;
       if (!game.canConfigure) return;
       const current = parseBet(input.value) ?? s.bet;
@@ -128,13 +168,12 @@ export function createUI(game, actions) {
             : s.balance;
       const amount = Math.min(Math.max(MIN_BET, requested), s.balance, MAX_BET);
       input.value = (amount / 100).toFixed(2);
-      game.setBet(amount);
       validateBet(true);
-      render(game.snapshot);
+      if (!game.setBet(amount)) render(game.snapshot);
     });
-  for (const button of document.querySelectorAll('[data-difficulty]'))
-    button.addEventListener('click', () => game.setDifficulty(button.dataset.difficulty));
-  $('game-controls').addEventListener('submit', (event) => {
+  for (const button of difficultyButtons)
+    on(button, 'click', () => game.setDifficulty(button.dataset.difficulty));
+  on(dom['game-controls'], 'submit', (event) => {
     event.preventDefault();
     if (!ready) return;
     const s = game.snapshot;
@@ -151,18 +190,18 @@ export function createUI(game, actions) {
       actions.start(amount);
     }
   });
-  cashoutButton.addEventListener('click', () => {
+  on(cashoutButton, 'click', () => {
     if (ready) actions.cashout();
   });
-  $('reset-button').addEventListener('click', () => {
+  on(dom['reset-button'], 'click', () => {
     if (!game.canConfigure) return;
     input.value = '25.00';
-    $('bet-error').textContent = '';
+    dom['bet-error'].textContent = '';
     input.setAttribute('aria-invalid', 'false');
     actions.reset();
   });
 
-  function render(s) {
+  function getView(s) {
     const configure = [PHASES.IDLE, PHASES.RESULT].includes(s.phase);
     const decision = s.phase === PHASES.READY;
     const active = !configure;
@@ -175,11 +214,15 @@ export function createUI(game, actions) {
         : active
           ? s.stake
           : s.bet;
-    $('balance').textContent = formatMoney(s.balance);
+    const probability = getGreenProbability(pendingCrossing, s.difficulty);
+    return { configure, decision, active, changedPhase, pendingCrossing, potential, probability };
+  }
+  function renderHUD(s, { decision, pendingCrossing, potential, probability }) {
+    dom['balance'].textContent = formatMoney(s.balance);
     const shownMultiplier = s.phase === PHASES.IDLE ? 1 : s.multiplier;
-    $('multiplier').innerHTML = `${formatMultiplier(shownMultiplier)}<span>×</span>`;
-    $('multiplier').style.fontSize = shownMultiplier >= 100 ? 'clamp(40px, 5.4vw, 70px)' : '';
-    $('potential-label').textContent =
+    dom['multiplier'].innerHTML = `${formatMultiplier(shownMultiplier)}<span>×</span>`;
+    dom['multiplier'].style.fontSize = shownMultiplier >= 100 ? 'clamp(40px, 5.4vw, 70px)' : '';
+    dom['potential-label'].textContent =
       s.phase === PHASES.RESULT
         ? s.payout > 0
           ? 'Incasso accreditato'
@@ -189,29 +232,31 @@ export function createUI(game, actions) {
           : s.phase === PHASES.ESCAPING
             ? 'Incasso accreditato'
             : 'Puntata in gioco';
-    if (s.phase === PHASES.IDLE) $('potential-label').textContent = 'Puntata pronta';
-    $('potential').textContent = formatMoney(
+    if (s.phase === PHASES.IDLE) dom['potential-label'].textContent = 'Puntata pronta';
+    dom['potential'].textContent = formatMoney(
       s.phase === PHASES.RESULT ? s.payout || s.stake : potential,
     );
-    $('crossing-count').textContent = `${String(s.crossing).padStart(2, '0')} / ${MAX_CROSSINGS}`;
-    const probability = getGreenProbability(pendingCrossing, s.difficulty);
-    $('next-probability').innerHTML = `${percentFormatter.format(probability * 100)}<span>%</span>`;
-    $('next-label').textContent =
+    dom['crossing-count'].textContent = `${String(s.crossing).padStart(2, '0')} / ${MAX_CROSSINGS}`;
+    dom['next-probability'].innerHTML = `${formatPercent(probability)}<span>%</span>`;
+    dom['next-label'].textContent =
       s.crossing === MAX_CROSSINGS
         ? 'PERCORSO COMPLETATO'
         : `INCROCIO ${String(pendingCrossing).padStart(2, '0')}`;
-    $('next-multiplier').textContent =
+    dom['next-multiplier'].textContent =
       `${formatMultiplier(getMultiplier(pendingCrossing, s.difficulty))}×`;
-    document.querySelector('.next-signal').hidden = s.crossing === MAX_CROSSINGS;
-    $('bet-fieldset').disabled = active || !ready;
-    $('difficulty-fieldset').disabled = active || !ready;
-    $('reset-button').disabled = active || !ready;
-    for (const button of document.querySelectorAll('[data-difficulty]'))
+    nextSignal.hidden = s.crossing === MAX_CROSSINGS;
+  }
+
+  function renderControls(s, { configure, decision, active, potential }) {
+    dom['bet-fieldset'].disabled = active || !ready;
+    dom['difficulty-fieldset'].disabled = active || !ready;
+    dom['reset-button'].disabled = active || !ready;
+    for (const button of difficultyButtons)
       button.setAttribute('aria-pressed', String(button.dataset.difficulty === s.difficulty));
-    $('difficulty-hint').textContent = DIFFICULTIES[s.difficulty].description;
-    $('rtp-label').textContent = `${Math.round(RTP_TARGET * 100)}%`;
+    dom['difficulty-hint'].textContent = DIFFICULTIES[s.difficulty].description;
+    dom['rtp-label'].textContent = `${Math.round(RTP_TARGET * 100)}%`;
     cashoutButton.disabled = !decision || !ready;
-    $('cashout-amount').textContent = s.crossing > 0 ? `${formatMoney(potential)} CR` : '—';
+    dom['cashout-amount'].textContent = decision ? `${formatMoney(potential)} CR` : '—';
     mainButton.disabled =
       !ready || !(configure || decision) || (configure && validateBet() === null);
     const labels = {
@@ -231,21 +276,27 @@ export function createUI(game, actions) {
       ],
     };
     const [phase, action, caption] = labels[s.phase];
-    $('phase-label').textContent = phase;
-    $('main-button-label').textContent = action;
-    $('action-caption').textContent = caption;
+    dom['phase-label'].textContent = phase;
+    dom['main-button-label'].textContent = action;
+    dom['action-caption'].textContent = caption;
+  }
+
+  function renderResult(s) {
     const showResult = s.phase === PHASES.RESULT;
-    $('result-banner').hidden = !showResult;
+    dom['result-banner'].hidden = !showResult;
     if (showResult) {
-      $('result-banner').classList.toggle('lost', s.payout === 0);
-      $('result-eyebrow').textContent =
+      dom['result-banner'].classList.toggle('lost', s.payout === 0);
+      dom['result-eyebrow'].textContent =
         s.payout > 0 ? 'TRACCE PERSE' : `CIRCONDATO ALL’INCROCIO ${s.crossing + 1}`;
-      $('result-title').textContent = s.payout > 0 ? `+${formatMoney(s.payout)} CR` : 'BECCATO!';
-      $('result-description').textContent =
+      dom['result-title'].textContent = s.payout > 0 ? `+${formatMoney(s.payout)} CR` : 'BECCATO!';
+      dom['result-description'].textContent =
         s.payout > 0
           ? `${s.crossing} ${s.crossing === 1 ? 'incrocio superato' : 'incroci superati'} · ${formatMultiplier(s.multiplier)}× · Utile ${formatMoney(s.payout - s.stake)} CR`
           : `Hai perso ${formatMoney(s.stake)} CR. La città ti aspetta per la prossima fuga.`;
     }
+  }
+
+  function renderRoute(s, { changedPhase, pendingCrossing }) {
     const newRouteKey = `${s.difficulty}:${s.crossing}:${s.phase}`;
     if (newRouteKey !== routeKey) {
       routeKey = newRouteKey;
@@ -258,9 +309,7 @@ export function createUI(game, actions) {
         r.item.classList.toggle('is-passed', n < s.crossing);
         r.item.classList.toggle(
           'is-next',
-          n === pendingCrossing &&
-            s.phase !== PHASES.CAUGHT &&
-            !(s.phase === PHASES.RESULT && !s.payout),
+          n === pendingCrossing && [PHASES.IDLE, PHASES.READY, PHASES.RUNNING].includes(s.phase),
         );
         r.item.classList.toggle(
           'is-caught',
@@ -273,24 +322,25 @@ export function createUI(game, actions) {
         );
       }
       if (changedPhase && s.crossing > 0) {
-        const route = $('route'),
+        const route = dom['route'],
           target = routeItems[Math.min(s.crossing, MAX_CROSSINGS - 1)].item;
         route.scrollTo({
           left:
             target.offsetLeft - route.offsetLeft - route.clientWidth / 2 + target.clientWidth / 2,
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-            ? 'instant'
-            : 'smooth',
+          behavior: motion.value ? 'instant' : 'smooth',
         });
-      } else if (s.crossing === 0) $('route').scrollLeft = 0;
+      } else if (s.crossing === 0) dom['route'].scrollLeft = 0;
     }
+  }
+
+  function renderStatus(s, { decision, pendingCrossing, potential, probability }) {
     let status = '';
     if (s.phase === PHASES.IDLE)
       status = 'Il ladro aspetta al rosso. Imposta la puntata e avvia la fuga quando vuoi.';
     else if (s.phase === PHASES.RUNNING)
       status = `Verde! Stai attraversando l’incrocio ${pendingCrossing}.`;
     else if (decision)
-      status = `Incrocio ${s.crossing} superato. Incassa ${formatMoney(potential)} CR oppure continua: il prossimo verde ha probabilità ${percentFormatter.format(probability * 100)}%.`;
+      status = `Incrocio ${s.crossing} superato. Incassa ${formatMoney(potential)} CR oppure continua: il prossimo verde ha probabilità ${formatPercent(probability)}%.`;
     else if (s.phase === PHASES.CAUGHT)
       status = `Rosso all’incrocio ${pendingCrossing}. La polizia ha fermato la fuga.`;
     else if (s.phase === PHASES.ESCAPING)
@@ -301,16 +351,19 @@ export function createUI(game, actions) {
         : `Puntata persa. ${s.balance < MIN_BET ? 'Ripristina 1.000 CR per continuare la demo.' : 'Puoi iniziare una nuova partita.'}`;
     if (status !== lastStatus) {
       lastStatus = status;
-      $('status-text').textContent = status;
+      dom['status-text'].textContent = status;
     }
+  }
+
+  function renderHistory(s) {
     const newHistoryKey = s.history.map((r) => `${r.id}:${r.outcome}`).join(',');
     if (newHistoryKey !== historyKey) {
       historyKey = newHistoryKey;
       if (!s.history.length)
-        $('history').innerHTML =
+        dom['history'].innerHTML =
           '<li class="history-empty">Le tue fughe iniziano qui.<span>Attraversa il primo incrocio per metterti alla prova.</span></li>';
       else
-        $('history').replaceChildren(
+        dom['history'].replaceChildren(
           ...s.history.map((round) => {
             const item = document.createElement('li');
             item.className = `history-card ${round.outcome}`;
@@ -335,6 +388,16 @@ export function createUI(game, actions) {
           }),
         );
     }
+  }
+
+  function render(s) {
+    const view = getView(s);
+    renderHUD(s, view);
+    renderControls(s, view);
+    renderResult(s, view);
+    renderRoute(s, view);
+    renderStatus(s, view);
+    renderHistory(s, view);
     previousPhase = s.phase;
     previousRound = s.round;
     previousCrossing = s.crossing;
@@ -344,17 +407,19 @@ export function createUI(game, actions) {
     setReady(value) {
       ready = value;
       render(game.snapshot);
-      $('scene-loader').hidden = value;
+      dom['scene-loader'].hidden = value;
     },
     showError(message) {
       ready = false;
       render(game.snapshot);
-      $('scene-loader').hidden = true;
-      $('webgl-error-text').textContent = message;
-      $('webgl-error').hidden = false;
+      dom['scene-loader'].hidden = true;
+      dom['webgl-error-text'].textContent = message;
+      dom['webgl-error'].hidden = false;
     },
     dispose() {
+      events.abort();
       unsubscribe();
+      ruleDialog.close();
     },
   };
 }

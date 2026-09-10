@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CityStream } from '../src/cityStream.js';
-import { createCityTile, getDistrictStyle } from '../src/cityTile.js';
+import { createCityTile } from '../src/cityTile.js';
+import { getDistrictStyle } from '../src/districtGeometry.js';
 import { CharacterController } from '../src/characterController.js';
 import { unitBox } from '../src/voxelModels.js';
 import { getCityLightLevel } from '../src/cityEffects.js';
@@ -286,4 +287,96 @@ test('Buildings emerge after the base arrives and retract before the base drops'
   assert.equal(tile.root.position.y, 0);
   assert.ok(tile.emerging.every((item) => item.growth === 1));
   tile.dispose();
+});
+
+test('Every cashout stop aligns with actual alley paving, including crossing twelve', () => {
+  for (let n = 1; n <= MAX_CROSSINGS; n++) {
+    const x = getStopX(n),
+      index = getCurrentTile(x),
+      tile = createCityTile(index);
+    tile.update(0, 1);
+    tile.root.updateMatrixWorld(true);
+    const paving = [];
+    const matrix = new THREE.Matrix4(),
+      point = new THREE.Vector3();
+    tile.root.traverse((mesh) => {
+      if (!mesh.isInstancedMesh || mesh.material.color.getHex() !== 0xc9b994) return;
+      for (let i = 0; i < mesh.count; i++) {
+        mesh.getMatrixAt(i, matrix);
+        point.setFromMatrixPosition(matrix).applyMatrix4(mesh.matrixWorld);
+        paving.push(point.clone());
+      }
+    });
+    for (let z = 8.5; z < 13; z += 0.6)
+      assert.ok(
+        paving.some((p) => Math.abs(p.x - x) < 1e-5 && Math.abs(p.z - z) < 1e-5),
+        `Missing paving at crossing ${n}, x=${x}, z=${z}`,
+      );
+    tile.dispose();
+  }
+});
+
+test('A stream owns its halo texture and releases it once without disposing shared voxel geometry', () => {
+  const first = new CityStream(new THREE.Scene());
+  let disposed = 0,
+    boxes = 0;
+  const texture = first.haloTexture;
+  texture.addEventListener('dispose', () => disposed++);
+  const onBox = () => boxes++;
+  unitBox.addEventListener('dispose', onBox);
+  first.reset();
+  assert.equal(disposed, 0);
+  first.dispose();
+  first.dispose();
+  assert.equal(disposed, 1);
+  assert.equal(boxes, 0);
+  const second = new CityStream(new THREE.Scene());
+  assert.notEqual(second.haloTexture, texture);
+  second.dispose();
+  unitBox.removeEventListener('dispose', onBox);
+});
+
+test('Stable tile materials stay untouched and alpha hashing is used only during base fades', () => {
+  const tile = createCityTile(1);
+  tile.update(0, 1);
+  let writes = 0;
+  const materials = [...tile.records.values()].map((record) => record.material);
+  for (const material of materials) {
+    let opacity = material.opacity;
+    Object.defineProperty(material, 'opacity', {
+      get: () => opacity,
+      set: (value) => {
+        writes++;
+        opacity = value;
+      },
+      configurable: true,
+    });
+    assert.equal(material.alphaHash, false);
+  }
+  for (let i = 0; i < 60; i++) tile.update(1 / 60, 1);
+  assert.equal(writes, 0);
+  tile.update(0, 0.2);
+  assert.ok(materials.every((material) => material.alphaHash));
+  tile.update(0, 1);
+  assert.ok(materials.every((material) => !material.alphaHash));
+  tile.dispose();
+});
+
+test('Shared voxel assets survive concurrent owners and are recreated after the last scene closes', async () => {
+  const models = await import('../src/voxelModels.js');
+  const releaseA = models.retainVoxelAssets(),
+    releaseB = models.retainVoxelAssets();
+  const geometry = models.unitBox,
+    material = models.material(0xabcdef);
+  let disposed = 0;
+  geometry.addEventListener('dispose', () => disposed++);
+  material.addEventListener('dispose', () => disposed++);
+  releaseA();
+  assert.equal(disposed, 0);
+  assert.equal(models.unitBox, geometry);
+  releaseB();
+  releaseB();
+  assert.equal(disposed, 2);
+  assert.notEqual(models.unitBox, geometry);
+  assert.notEqual(models.material(0xabcdef), material);
 });

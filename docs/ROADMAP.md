@@ -12,7 +12,7 @@ La scena del minigioco è approvata come base. Il prossimo intervento riguarda l
 - Rifinire percorso, storico e riepiloghi di vittoria/perdita con spaziature e tipografia coerenti.
 - Verificare touch, tastiera, contrasto, movimento ridotto e assenza di sovrapposizioni su desktop/mobile.
 
-Il redesign va sviluppato nel prossimo intervento: questa revisione prepara il progetto e rimuove i riferimenti all’elicottero.
+La preparazione tecnica è completata: CSS consolidato per breakpoint, scala tipografica, rendering UI suddiviso e lookup DOM memorizzati, gestione HMR e risorse corretta, formatter e controlli CI configurati. Il redesign visivo resta il prossimo intervento. La revisione dell’elicottero resta separata.
 
 ## 2. Da revisionare: fuga in elicottero
 
@@ -31,3 +31,7 @@ Prima di reintrodurre la funzione:
 - Verificare incasso singolo, ultimo incrocio, riavvio e assenza di modifiche involontarie all’RTP.
 
 Questa descrizione conserva l’intento della funzione per la revisione futura, senza mantenere codice dormiente.
+
+## 3. Profilazione sul dispositivo reale
+
+Misurare frame time e compilazione degli shader sulla UHD Graphics, soprattutto quando le tile entrano/escono. I materiali stabili ora evitano aggiornamenti ripetuti e `alphaHash` è attivo solo durante la dissolvenza della base. I controlli automatici WebGL usano SwiftShader e non quantificano il guadagno sulla GPU fisica.

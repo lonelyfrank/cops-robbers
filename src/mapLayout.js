@@ -2,11 +2,11 @@ import { MAX_CROSSINGS } from './gameMath.js';
 
 // Each square is a complete diorama: one junction and aligned road connectors.
 export const TILE_SIZE = 26;
-export const CROSSING_SPACING = TILE_SIZE;
 export const MAIN_ROAD_Z = 4.6;
 export const RUNNER_Z = MAIN_ROAD_Z + 1.25;
 export const ROAD_Y = -0.03;
 export const STOP_DISTANCE = 4.7;
+export const ALLEY_LOCAL_X = Object.freeze([-STOP_DISTANCE, STOP_DISTANCE]);
 export const getCrossingX = (n) => (n - 1) * TILE_SIZE;
 // The patrol waits before the previous zebra crossing, one district behind.
 export const getPursuitStopX = (completed) => getCrossingX(completed) - 6.7;

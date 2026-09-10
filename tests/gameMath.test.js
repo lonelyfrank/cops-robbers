@@ -4,6 +4,7 @@ import {
   RTP_TARGET,
   DIFFICULTIES,
   MAX_CROSSINGS,
+  MIN_GREEN_PROBABILITY,
   getGreenProbability,
   getCumulativeProbability,
   getMultiplier,
@@ -97,4 +98,27 @@ test('Math rejects invalid crossing, difficulty, RTP, and unsafe monetary input'
     assert.throws(() => calculatePayout(stake, 12, 'hard'), RangeError);
   close(getCumulativeProbability(0), 1);
   close(getMultiplier(0), 1);
+});
+
+test('The probability floor is a defensive bound outside the current twelve-crossing curve', () => {
+  for (const d of Object.keys(DIFFICULTIES))
+    for (let n = 1; n <= MAX_CROSSINGS; n++)
+      assert.ok(getGreenProbability(n, d) > MIN_GREEN_PROBABILITY);
+});
+
+test('Documented rounded RTP examples refer to the worst available cashout strategy', () => {
+  for (const [stake, expected] of [
+    [100, 95.54],
+    [2500, 95.97],
+    [100000, 96],
+  ]) {
+    let minimum = 1;
+    for (const d of Object.keys(DIFFICULTIES))
+      for (let n = 1; n <= MAX_CROSSINGS; n++)
+        minimum = Math.min(
+          minimum,
+          (getCumulativeProbability(n, d) * calculatePayout(stake, n, d)) / stake,
+        );
+    assert.equal(Number((minimum * 100).toFixed(2)), expected);
+  }
 });

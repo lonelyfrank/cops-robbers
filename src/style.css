@@ -10,6 +10,8 @@
   --red: #ff797d;
   --yellow: #edd576;
   color-scheme: dark;
+  --fs-caption: 12px;
+  --fs-eyebrow: 12px;
 }
 * {
   box-sizing: border-box;
@@ -75,21 +77,13 @@ svg {
   height: 42px;
   color: #394351;
 }
-.brand-sub {
-  display: block;
-  font-family: 'Arial Narrow', Arial, sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 2.9px;
-  margin-top: 7px;
-}
 .demo-tag {
   border: 1px solid #35402e;
   background: #192118;
   color: #c0d0b0;
   border-radius: 5px;
   padding: 6px 8px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.9px;
   line-height: 1.4;
 }
@@ -101,7 +95,7 @@ svg {
   gap: 7px;
 }
 .wallet-label {
-  font-size: 12px;
+  font-size: var(--fs-eyebrow);
   font-weight: 600;
   letter-spacing: 1.6px;
   color: var(--muted);
@@ -177,7 +171,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 12px;
+  font-size: var(--fs-eyebrow);
   font-weight: 600;
   color: #bcc6d5;
   letter-spacing: 1.6px;
@@ -215,7 +209,7 @@ svg {
   max-width: 45%;
 }
 .eyebrow {
-  font-size: 12px;
+  font-size: var(--fs-eyebrow);
   font-weight: 600;
   letter-spacing: 1.7px;
   color: #b4c0d0;
@@ -252,11 +246,10 @@ svg {
 }
 .potential-value > span:last-child {
   color: #98a9bb;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   letter-spacing: 1px;
   margin-left: 3px;
 }
-
 .next-signal {
   position: absolute;
   top: 97px;
@@ -268,7 +261,7 @@ svg {
   text-shadow: 0 2px 15px #10151f;
 }
 .next-signal .eyebrow {
-  font-size: 12px;
+  font-size: var(--fs-eyebrow);
 }
 .next-signal strong {
   font-family: 'SFMono-Regular', Consolas, monospace;
@@ -282,11 +275,11 @@ svg {
   margin-left: 2px;
 }
 .chance-label {
-  font-size: 12px;
+  font-size: var(--fs-eyebrow);
   color: #a9b5c6;
 }
 .next-multiplier {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #a9b5c6;
   margin-top: 5px;
 }
@@ -300,17 +293,19 @@ svg {
   position: absolute;
   bottom: 21px;
   left: 28px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   letter-spacing: 2.5px;
   color: #91a0b3;
   display: flex;
   align-items: center;
   gap: 10px;
+  max-width: calc(100% - 48px);
 }
 .street-caption-line {
   height: 1px;
   width: 26px;
   background: #8999ad;
+  flex-shrink: 0;
 }
 .result-banner {
   position: absolute;
@@ -343,9 +338,16 @@ svg {
 .result-banner.lost {
   border-color: #c067687a;
   background: #271b25f2;
+  top: auto;
+  bottom: 15px;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  gap: 5px;
+  width: min(360px, 70%);
 }
 .result-banner.lost strong {
   color: var(--red);
+  font-size: 30px;
 }
 .scene-loader,
 .webgl-error {
@@ -366,11 +368,6 @@ svg {
   border-top-color: var(--lime);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .webgl-error {
   flex-direction: column;
@@ -404,20 +401,21 @@ svg {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   letter-spacing: 1.3px;
   color: #95a1b3;
+  flex-wrap: wrap;
+  row-gap: 8px;
 }
 .route-header strong {
   color: #e1e7ef;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   margin-left: 10px;
   font-family: Consolas, monospace;
   font-weight: 400;
   letter-spacing: 0.3px;
 }
-
 .route {
   list-style: none;
   margin: 0;
@@ -444,7 +442,7 @@ svg {
 }
 .route-step .step-n {
   font-family: Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #75849a;
 }
 .route-step .step-multi {
@@ -476,7 +474,6 @@ svg {
   background: #eb7a7d15;
   color: var(--red);
 }
-
 .game-controls {
   border-top: 1px solid var(--line);
   display: grid;
@@ -501,7 +498,7 @@ legend {
 }
 legend span {
   float: right;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #8391a4;
   letter-spacing: 1px;
   margin-top: 2px;
@@ -554,7 +551,7 @@ legend span {
   border-radius: 5px;
   background: #242d3b;
   color: #aeb9c9;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
 }
 .bet-shortcuts button:hover:not(:disabled) {
@@ -565,7 +562,7 @@ fieldset:disabled {
   opacity: 0.5;
 }
 .bet-error {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: var(--red);
   display: block;
   margin-top: 8px;
@@ -601,10 +598,10 @@ fieldset:disabled {
 }
 .control-hint {
   display: block;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #9aa6b6;
   margin-top: 10px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .action-controls {
   display: flex;
@@ -689,7 +686,7 @@ fieldset:disabled {
   opacity: 0.4;
 }
 .action-caption {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   text-align: center;
   color: #a2adbc;
   line-height: 1.4;
@@ -703,7 +700,7 @@ fieldset:disabled {
   padding: 13px 26px;
   border-top: 1px solid var(--line);
   color: #a5b0c1;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
 }
 .status-bar button {
@@ -712,7 +709,7 @@ fieldset:disabled {
   flex-shrink: 0;
   padding: 4px 0;
   color: #c7cdd7;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   text-decoration: underline;
   text-underline-offset: 4px;
   text-decoration-color: #515d6e;
@@ -737,7 +734,7 @@ fieldset:disabled {
   padding: 8px 0;
   background: none;
   border: 0;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #a7b3c3;
 }
 .section-heading button:hover:not(:disabled) {
@@ -766,7 +763,7 @@ fieldset:disabled {
 .history-empty span {
   display: block;
   color: #8794a7;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   margin-top: 7px;
 }
 .history-card {
@@ -783,7 +780,7 @@ fieldset:disabled {
   display: flex;
   gap: 6px;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #c9dbb4;
 }
 .history-outcome:before {
@@ -803,13 +800,14 @@ fieldset:disabled {
   color: #f0f3f7;
 }
 .history-detail {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #8999ad;
+  line-height: 1.5;
 }
 .history-amount {
   text-align: right;
   font-family: Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: var(--lime);
 }
 .history-card.lost .history-amount {
@@ -822,8 +820,8 @@ fieldset:disabled {
   flex-wrap: wrap;
   margin-top: 26px;
   padding-bottom: 12px;
-  font-size: 12px;
-  letter-spacing: 1.15px;
+  font-size: var(--fs-caption);
+  letter-spacing: 0.4px;
   line-height: 1.5;
   color: #8290a3;
 }
@@ -896,7 +894,7 @@ fieldset:disabled {
 .risk-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
 }
 .risk-table caption {
@@ -909,7 +907,7 @@ fieldset:disabled {
   text-align: right;
   font-weight: 500;
   color: #91a2b6;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 .risk-table th:first-child,
 .risk-table td:first-child {
@@ -927,10 +925,24 @@ fieldset:disabled {
   font-family: Consolas, monospace;
 }
 .dialog-footnote {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: #93a2b5;
   line-height: 1.6;
   margin-top: 22px;
+}
+#street-caption {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.brand-name {
+  font-size: clamp(18px, 2.2vw, 28px);
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+}
+.stage:has(.result-banner.lost:not([hidden])) .street-caption {
+  visibility: hidden;
 }
 @media (min-width: 1600px) {
   #app {
@@ -957,7 +969,7 @@ fieldset:disabled {
     padding: 0 5px;
   }
   .difficulty-options button {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     padding: 0 5px;
   }
   .hud {
@@ -967,9 +979,6 @@ fieldset:disabled {
   .next-signal {
     top: 100px;
     right: 22px;
-  }
-  .next-signal .eyebrow {
-    font-size: 12px;
   }
   .route-step {
     min-width: 80px;
@@ -990,34 +999,27 @@ fieldset:disabled {
   }
   .topbar {
     min-height: 85px;
-    gap: 15px;
+    gap: 12px;
   }
   .brand {
     font-size: 24px;
-    gap: 7px;
-  }
-  .brand-sub {
-    font-size: 12px;
-    letter-spacing: 2.7px;
+    gap: 6px;
   }
   .brand-mark {
     width: 25px;
     height: 36px;
   }
   .demo-tag {
-    font-size: 12px;
     padding: 5px;
     letter-spacing: 0.4px;
+    display: none;
   }
   .demo-tag span {
     display: none;
   }
-  .wallet-label {
-    font-size: 12px;
-  }
   .wallet-value {
     gap: 5px;
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .wallet-value strong {
     font-size: 20px;
@@ -1038,7 +1040,6 @@ fieldset:disabled {
     right: 15px;
   }
   .location-label {
-    font-size: 12px;
     letter-spacing: 1px;
     gap: 6px;
   }
@@ -1050,18 +1051,17 @@ fieldset:disabled {
   .hud {
     top: 73px;
     left: 20px;
-    max-width: 52%;
+    max-width: 50%;
   }
   .eyebrow {
-    font-size: 12px;
-    letter-spacing: 1.2px;
+    letter-spacing: 0.7px;
   }
   .multiplier {
     font-size: 67px;
     margin-bottom: 10px;
   }
   .potential-label {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .potential-value {
     font-size: 18px;
@@ -1070,19 +1070,15 @@ fieldset:disabled {
     top: 78px;
     right: 18px;
     gap: 4px;
+    max-width: 43%;
   }
   .next-signal strong {
     font-size: 25px;
   }
-  .chance-label {
-    font-size: 12px;
-  }
   .next-signal .eyebrow {
-    font-size: 12px;
     letter-spacing: 0.8px;
   }
   .street-caption {
-    font-size: 12px;
     left: 19px;
     bottom: 18px;
     letter-spacing: 1.6px;
@@ -1096,18 +1092,16 @@ fieldset:disabled {
     font-size: 32px;
   }
   .result-banner > span:last-child {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .route-area {
     padding: 0 15px 16px;
   }
   .route-header {
-    font-size: 12px;
     letter-spacing: 0.6px;
     gap: 10px;
   }
   .route-header strong {
-    font-size: 12px;
     margin-left: 7px;
   }
   .route-step {
@@ -1125,13 +1119,12 @@ fieldset:disabled {
     display: grid;
     grid-template-columns: 1fr;
   }
-  .action-controls:has(.button-cashout:not([hidden])) {
+  .action-controls:has(.button-cashout:not(:disabled)) {
     grid-template-columns: 1fr 1fr;
   }
   .action-caption {
     grid-column: 1/-1;
     margin-top: 2px;
-    font-size: 12px;
   }
   .button-primary {
     height: 51px;
@@ -1151,35 +1144,26 @@ fieldset:disabled {
   .difficulty-options {
     height: 49px;
   }
-  .control-hint {
-    font-size: 12px;
-  }
   .bet-input-row input {
     font-size: 18px;
     padding: 6px 4px;
   }
   .bet-shortcuts button {
-    font-size: 12px;
     min-width: 25px;
     padding: 0 5px;
   }
   .bet-error {
-    font-size: 12px;
     min-height: 15px;
     margin-top: 7px;
   }
   legend {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     margin-bottom: 9px;
   }
   .status-bar {
     padding: 11px 15px;
     gap: 9px;
     flex-wrap: wrap;
-    font-size: 12px;
-  }
-  .status-bar button {
-    font-size: 12px;
   }
   .history-section {
     margin-top: 20px;
@@ -1190,28 +1174,20 @@ fieldset:disabled {
   .section-heading h2 {
     font-size: 14px;
   }
-  .section-heading button {
-    font-size: 12px;
-  }
   .history {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .history-card {
     padding: 12px;
     gap: 8px;
-  }
-  .history-detail {
-    font-size: 12px;
+    grid-template-columns: 1fr;
   }
   .history-empty {
-    font-size: 12px;
-  }
-  .history-empty span {
-    font-size: 12px;
+    font-size: var(--fs-caption);
   }
   .footer {
-    font-size: 12px;
-    letter-spacing: 0.6px;
+    font-size: 11px;
+    letter-spacing: 0.4px;
     margin-top: 20px;
     gap: 10px;
   }
@@ -1228,8 +1204,28 @@ fieldset:disabled {
     font-size: 13px;
   }
   .math-note {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     padding: 13px;
+  }
+  .history-amount {
+    text-align: left;
+  }
+  .difficulty-options button {
+    font-size: var(--fs-caption);
+  }
+  .brand-name {
+    font-size: 20px;
+  }
+  .result-banner.lost {
+    bottom: 12px;
+    width: 82%;
+    padding: 10px 14px;
+  }
+  .result-banner.lost strong {
+    font-size: 25px;
+  }
+  :root {
+    --fs-eyebrow: 11px;
   }
 }
 @media (max-width: 375px) {
@@ -1245,25 +1241,45 @@ fieldset:disabled {
   .bet-shortcuts button {
     min-width: 22px;
     padding: 0 3px;
+    flex: 1;
+    min-height: 34px;
   }
   .difficulty-options button {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     padding: 0 3px;
-  }
-  .demo-tag {
-    font-size: 12px;
+    min-height: 39px;
+    flex: 1 1 40%;
   }
   .multiplier {
-    font-size: 58px;
+    font-size: 55px;
   }
   .next-signal .eyebrow {
-    font-size: 12px;
-  }
-  .chance-label {
-    font-size: 12px;
+    font-size: 10px;
   }
   .stage {
     height: 375px;
+  }
+  .bet-input-row {
+    height: auto;
+    min-height: 49px;
+    flex-wrap: wrap;
+  }
+  .bet-input-row input {
+    width: 100%;
+  }
+  .bet-shortcuts {
+    width: 100%;
+  }
+  .difficulty-options {
+    height: auto;
+    min-height: 49px;
+    flex-wrap: wrap;
+  }
+  .brand-name {
+    font-size: 18px;
+  }
+  .brand-mark {
+    width: 21px;
   }
 }
 @media (orientation: landscape) and (max-height: 550px) {
@@ -1279,9 +1295,6 @@ fieldset:disabled {
   .brand-mark {
     height: 34px;
     width: 25px;
-  }
-  .wallet-label {
-    font-size: 12px;
   }
   .wallet-value strong {
     font-size: 20px;
@@ -1336,187 +1349,8 @@ fieldset:disabled {
     scroll-behavior: auto !important;
   }
 }
-
-/* Keep controls readable, with fluid layout when text is enlarged. */
-.brand-sub {
-  font-size: 11px;
-}
-.route-header {
-  flex-wrap: wrap;
-  row-gap: 8px;
-}
-.route-step .step-multi {
-  font-size: 13px;
-}
-.control-hint {
-  line-height: 1.5;
-}
-.history-detail {
-  line-height: 1.5;
-}
-.footer {
-  font-size: 12px;
-  letter-spacing: 0.4px;
-}
-@media (max-width: 720px) {
-  .demo-tag {
-    display: none;
-  }
-  .brand-sub {
-    font-size: 9px;
-  }
-  .wallet-label {
-    font-size: 11px;
-  }
-  .topbar {
-    gap: 12px;
-  }
-  .eyebrow {
-    font-size: 11px;
-    letter-spacing: 0.7px;
-  }
-  .location-label {
-    font-size: 11px;
-  }
-  .next-signal .eyebrow {
-    font-size: 11px;
-  }
-  .next-signal {
-    max-width: 43%;
-    top: 78px;
-  }
-  .chance-label {
-    font-size: 11px;
-  }
-  .hud {
-    max-width: 50%;
-  }
-  .potential-label {
-    font-size: 12px;
-  }
-  .history {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .history-card {
-    grid-template-columns: 1fr;
-  }
-  .history-amount {
-    text-align: left;
-  }
-  .difficulty-options button {
-    font-size: 12px;
-  }
-  .bet-shortcuts button {
-    font-size: 12px;
-  }
-  .button-primary {
-    font-size: 14px;
-  }
-  .status-bar {
-    font-size: 12px;
-  }
-  .footer {
-    font-size: 11px;
-  }
-  .action-caption {
-    font-size: 12px;
-  }
-  .bet-error {
-    font-size: 12px;
-  }
-}
-@media (max-width: 375px) {
-  .bet-input-row {
-    height: auto;
-    min-height: 49px;
-    flex-wrap: wrap;
-  }
-  .bet-input-row input {
-    width: 100%;
-  }
-  .bet-shortcuts {
-    width: 100%;
-  }
-  .bet-shortcuts button {
-    flex: 1;
-    min-height: 34px;
-  }
-  .difficulty-options {
-    height: auto;
-    min-height: 49px;
-    flex-wrap: wrap;
-  }
-  .difficulty-options button {
-    min-height: 39px;
-    flex: 1 1 40%;
-  }
-  .next-signal .eyebrow {
-    font-size: 10px;
-  }
-  .multiplier {
-    font-size: 55px;
-  }
-}
-@media (orientation: landscape) and (max-height: 550px) {
-  .next-signal {
-    top: 66px;
-  }
-}
-
-.street-caption {
-  max-width: calc(100% - 48px);
-}
-.street-caption-line {
-  flex-shrink: 0;
-}
-#street-caption {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-/* Compact wordmark and a result card that leaves the police ring visible. */
-.brand-name {
-  font-size: clamp(18px, 2.2vw, 28px);
-  letter-spacing: -0.6px;
-  white-space: nowrap;
-}
-.result-banner.lost {
-  top: auto;
-  bottom: 15px;
-  transform: translateX(-50%);
-  padding: 12px 18px;
-  gap: 5px;
-  width: min(360px, 70%);
-}
-.result-banner.lost strong {
-  font-size: 30px;
-}
-.stage:has(.result-banner.lost:not([hidden])) .street-caption {
-  visibility: hidden;
-}
-@media (max-width: 720px) {
-  .brand {
-    gap: 6px;
-  }
-  .brand-name {
-    font-size: 20px;
-  }
-  .result-banner.lost {
-    bottom: 12px;
-    width: 82%;
-    padding: 10px 14px;
-  }
-  .result-banner.lost strong {
-    font-size: 25px;
-  }
-}
-@media (max-width: 375px) {
-  .brand-name {
-    font-size: 18px;
-  }
-  .brand-mark {
-    width: 21px;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

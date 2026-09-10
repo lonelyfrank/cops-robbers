@@ -1,4 +1,4 @@
-import { createCityTile } from './cityTile.js';
+import { createCityTile, createHaloTexture } from './cityTile.js';
 import { getCurrentTile, getTileWindow, getTileRole, getStopX, getCrossingX } from './mapLayout.js';
 import { MAX_CROSSINGS } from './gameMath.js';
 import { createCityLighting } from './cityEffects.js';
@@ -10,6 +10,7 @@ export class CityStream {
     this.reducedMotion = reducedMotion;
     this.createTile = createTile;
     this.lighting = createCityLighting();
+    this.haloTexture = createHaloTexture();
     this.playerX = getStopX(0);
     this.tiles = new Map();
     this.current = 1;
@@ -21,9 +22,11 @@ export class CityStream {
   get activeTile() {
     return this.tiles.get(this.current)?.tile;
   }
+  // Read-only inspection hook for district-boundary tests.
   get previousTile() {
     return this.tiles.get(this.current - 1)?.tile;
   }
+  // Single-signal diagnostic hook; gameplay uses setMovement().
   setSignal(n, state) {
     this.signals.set(n, state);
     this.tiles.get(n)?.tile.setSignal(state);
@@ -51,7 +54,10 @@ export class CityStream {
     this.current = current;
     for (const index of wanted) {
       if (!this.tiles.has(index)) {
-        const tile = this.createTile(index, { lighting: this.lighting });
+        const tile = this.createTile(index, {
+          lighting: this.lighting,
+          haloTexture: this.haloTexture,
+        });
         const reveal = immediate || this.reducedMotion ? 1 : 0;
         tile.setSignal(this.signals.get(index) ?? 'red');
         this.scene.add(tile.root);
@@ -121,6 +127,7 @@ export class CityStream {
     if (this.disposed) return;
     for (const { tile } of this.tiles.values()) tile.dispose();
     this.tiles.clear();
+    this.haloTexture.dispose();
     this.disposed = true;
   }
 }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CharacterController } from '../src/characterController.js';
-import { getStopX } from '../src/sceneManager.js';
+import { getStopX, getCurrentTile, ALLEY_LOCAL_X } from '../src/mapLayout.js';
 import { getPursuitStopX, getCrossingX, RUNNER_Z, TILE_SIZE } from '../src/mapLayout.js';
 import { getMultiplier } from '../src/gameMath.js';
 
@@ -59,6 +59,13 @@ test('Cashout uses the alley at every crossing in normal and reduced motion', ()
       assert.equal(completed, 1);
       assert.equal(c.thief.root.visible, false);
       assert.equal(c.thief.root.position.x, getStopX(n));
+      assert.ok(
+        ALLEY_LOCAL_X.some(
+          (x) =>
+            Math.abs(c.thief.root.position.x - getCrossingX(getCurrentTile(getStopX(n))) - x) <
+            1e-10,
+        ),
+      );
       assert.ok(c.thief.root.position.z > 12);
       scene.updateMatrixWorld(true);
       scene.traverse((object) => assert.ok(object.matrixWorld.elements.every(Number.isFinite)));
@@ -164,4 +171,30 @@ test('Capture cars enter from street ends and form a four-sided ring around the 
     assert.ok(c.flankPolice.every((car) => !car.root.visible));
     assert.equal(c.police.root.visible, false);
   }
+});
+
+test('Arrest poses at equal elapsed times are identical at 30, 60 and 120 Hz', () => {
+  const sample = (fps, seconds) => {
+    const c = new CharacterController(new THREE.Scene());
+    c.caught(1);
+    for (let i = 0; i < Math.round(fps * seconds); i++) c.update(1 / fps);
+    return [...c.thief.arms.map((arm) => arm.rotation.z), c.thief.body.rotation.z];
+  };
+  for (const seconds of [0.5, 1, 1.5, 2]) {
+    const expected = sample(30, seconds);
+    for (const fps of [60, 120])
+      sample(fps, seconds).forEach((value, i) => assert.ok(Math.abs(value - expected[i]) < 1e-10));
+  }
+});
+
+test('Capture and reset do not restart the shared siren clock', () => {
+  const c = new CharacterController(new THREE.Scene());
+  c.update(0.1, 8.75);
+  const before = c.chase.blueLight.intensity;
+  c.caught(1);
+  c.update(0, 8.75);
+  assert.equal(c.chase.blueLight.intensity, before);
+  c.reset();
+  c.update(0, 8.75);
+  assert.equal(c.chase.blueLight.intensity, before);
 });
