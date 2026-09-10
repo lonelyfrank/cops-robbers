@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0e14" />
+    <meta name="description" content="Cops&Robbers: una fuga voxel nella notte. Attraversa gli incroci, scegli quando incassare e raggiungi l'elicottero. Solo crediti virtuali." />
+    <title>Cops&Robbers — Demo giocabile</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="" aria-label="Cops&Robbers, ricarica la demo">
+          <svg class="brand-mark" viewBox="0 0 32 44" aria-hidden="true"><rect x="6" y="1" width="20" height="37" rx="7" fill="currentColor"/><path d="M16 38v6" stroke="currentColor" stroke-width="4"/><circle cx="16" cy="10" r="4" fill="#ee6666"/><circle cx="16" cy="20" r="4" fill="#edd576"/><circle cx="16" cy="30" r="4" fill="#c9f57a"/></svg>
+          <span>FUGA<span class="brand-sub">AI SEMAFORI</span></span>
+        </a>
+        <span class="demo-tag">DEMO <span>· CREDITI VIRTUALI</span></span>
+        <div class="wallet"><span class="wallet-label">IL TUO SALDO</span><span class="wallet-value"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 8H11a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9.5M12 6v12"/></svg><strong id="balance">1.000,00</strong><span>CR</span></span></div>
+      </header>
+
+      <main>
+        <section class="game-board" aria-label="Gioco Cops&Robbers">
+          <div class="stage" id="stage">
+            <canvas id="game-canvas" aria-label="Città notturna 3D: un ladro attraversa gli incroci. Lo stato della partita è indicato anche nel testo." role="img"></canvas>
+            <div class="stage-vignette" aria-hidden="true"></div>
+            <div id="police-flash" class="police-flash" aria-hidden="true"></div>
+            <div class="stage-topline"><span class="location-label"><span class="live-dot"></span> DISTRETTO 07 <span class="location-divider">/</span> NOTTE</span><button id="help-button" class="icon-button" type="button" aria-label="Come si gioca">?</button></div>
+            <div class="hud">
+              <span class="eyebrow" id="phase-label">PRONTO A PARTIRE</span>
+              <div class="multiplier" id="multiplier">1,00<span>×</span></div>
+              <p class="potential-label" id="potential-label">Puntata pronta</p>
+              <p class="potential-value"><span id="potential">25,00</span> <span>CR</span></p>
+              <span id="helicopter-active" class="bonus-pill" hidden>ESTRAZIONE +8% INCLUSO</span>
+            </div>
+            <div class="next-signal"><span class="eyebrow" id="next-label">PROSSIMO INCROCIO</span><strong id="next-probability">95<span>%</span></strong><span class="chance-label">probabilità di verde</span><span class="next-multiplier">Obiettivo <b id="next-multiplier">1,01×</b></span></div>
+            <div id="countdown" class="countdown" hidden><div class="countdown-light" aria-hidden="true"></div><strong id="countdown-number">1,5</strong><span>ASPETTA IL VERDE</span><div class="countdown-track"><i id="countdown-progress"></i></div></div>
+            <div id="result-banner" class="result-banner" hidden aria-live="polite"><span id="result-eyebrow" class="eyebrow"></span><strong id="result-title"></strong><span id="result-description"></span></div>
+            <div id="webgl-error" class="webgl-error" hidden role="alert"><strong>La città 3D non si è avviata</strong><p id="webgl-error-text">Apri il gioco con un browser che supporta WebGL 2.</p><button id="reload-button" type="button">Ricarica</button></div>
+            <div class="street-caption"><span class="street-caption-line"></span> <span id="street-caption">VIA DELLA FUGA</span></div>
+            <div class="scene-loader" id="scene-loader"><span></span>Si accendono i semafori…</div>
+          </div>
+
+          <div class="route-area">
+            <div class="route-header"><span>PERCORSO <strong id="crossing-count">00 / 12</strong></span><span id="helicopter-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14M12 3v4M8 8h7l4 5v3H7l-4-6H1m6 9h14M9 16v3m8-3v3"/></svg> Elicottero al 5° incrocio</span></div>
+            <ol id="route" class="route" aria-label="Incroci del percorso"></ol>
+          </div>
+
+          <form id="game-controls" class="game-controls" novalidate>
+            <fieldset class="bet-control" id="bet-fieldset"><legend>Puntata <span>CR</span></legend><div class="bet-input-row"><input id="bet-input" type="number" inputmode="decimal" min="1" max="1000000" step="0.01" value="25" aria-label="Puntata in crediti virtuali" aria-describedby="bet-error"/><div class="bet-shortcuts"><button type="button" data-bet="half" aria-label="Dimezza la puntata">½</button><button type="button" data-bet="double" aria-label="Raddoppia la puntata">2×</button><button type="button" data-bet="max">MAX</button></div></div><span id="bet-error" class="bet-error" role="alert"></span></fieldset>
+            <fieldset class="difficulty-control" id="difficulty-fieldset"><legend>Difficoltà</legend><div class="difficulty-options" role="group" aria-label="Difficoltà"><button type="button" data-difficulty="easy" aria-pressed="false">Facile</button><button type="button" data-difficulty="medium" aria-pressed="true">Medio</button><button type="button" data-difficulty="hard" aria-pressed="false">Difficile</button></div><span id="difficulty-hint" class="control-hint">Più rischio, più moltiplicatore.</span></fieldset>
+            <div class="action-controls"><button id="main-button" class="button-primary" type="submit" disabled><span id="main-button-label">Avvia la fuga</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button><button id="cashout-button" class="button-cashout" type="button" hidden>Incassa <span id="cashout-amount"></span></button><span class="action-caption" id="action-caption">Il primo semaforo si accende dopo 1,5 s.</span></div>
+          </form>
+          <div class="status-bar"><span id="status-text" role="status" aria-live="polite">Imposta la puntata. La fuga comincia al primo incrocio.</span><button id="rules-button" type="button">Probabilità e regole</button></div>
+        </section>
+
+        <section class="history-section" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">Ultime fughe</h2><button id="reset-button" type="button">Ripristina 1.000 CR</button></div><ol id="history" class="history"><li class="history-empty">Le tue fughe iniziano qui.<span>Attraversa il primo incrocio per metterti alla prova.</span></li></ol></section>
+        <footer class="footer"><span>SOLO MONETA FINTA <span class="footer-separator">/</span> NESSUN PAGAMENTO</span><span>RTP TEORICO <strong id="rtp-label">96%</strong></span></footer>
+      </main>
+    </div>
+
+    <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><div class="dialog-heading"><span class="eyebrow">LE REGOLE DELLA FUGA</span><button type="button" id="close-rules" class="icon-button" aria-label="Chiudi le regole">×</button></div><h2 id="rules-title">Un incrocio. Una scelta.</h2><ol class="rules-list"><li><strong>Imposta puntata e difficoltà.</strong> Parti con 1.000 crediti virtuali. La puntata viene scalata alla partenza.</li><li><strong>Aspetta il semaforo.</strong> Dopo 1,5 secondi, verde significa passaggio; rosso significa arresto e perdita della puntata.</li><li><strong>Prosegui o incassa.</strong> Dopo ogni verde raggiungi il tratto successivo: si accende al tuo ingresso, mentre quello alle spalle passa alle sirene. Puoi rischiare al prossimo incrocio oppure incassare. Nessun limite di tempo per decidere.</li><li><strong>Raggiungi l'elicottero.</strong> Dal 5° incrocio la fuga include un bonus dell'8% sul moltiplicatore base. Al 12° incrocio incassi automaticamente.</li></ol><div class="math-note"><strong>Come leggere il 96%</strong><p>Il moltiplicatore mostrato è quello totale, bonus compreso. La probabilità di raggiungere un incrocio × il suo moltiplicatore totale è sempre 0,96. Il bonus è già previsto nel calcolo: non viene aggiunto una seconda volta.</p><p>È una media teorica su molte partite, non una vincita garantita. Le vincite sono arrotondate per difetto a 0,01 CR, con una riduzione inferiore a 0,01 CR per incasso. Gli esiti non dipendono dalle partite precedenti. I moltiplicatori a video sono arrotondati; gli incassi usano il valore completo.</p></div><div class="risk-table-wrap"><table class="risk-table"><caption id="risk-caption">Probabilità · Medio</caption><thead><tr><th>Incrocio</th><th>Verde</th><th>Arrivare qui</th><th>Totale</th></tr></thead><tbody id="risk-table-body"></tbody></table></div><p class="dialog-footnote">Il saldo e lo storico durano finché questa pagina resta aperta. Ricaricare la pagina ripristina la demo. Nessun conto, pagamento o servizio esterno.</p></dialog>
+    <noscript>Per giocare a Cops&Robbers devi abilitare JavaScript nel browser.</noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
