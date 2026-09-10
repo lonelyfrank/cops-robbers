@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { IntersectionTraffic } from '../src/trafficController.js';
 import { CharacterController } from '../src/characterController.js';
-import { getCrossingX, getStopX, getPursuitStopX, RUNNER_Z } from '../src/mapLayout.js';
+import {
+  getCrossingX,
+  getStopX,
+  getPursuitStopX,
+  RUNNER_Z,
+  MAIN_ROAD_Z,
+  TILE_SIZE,
+} from '../src/mapLayout.js';
+import { createCityTile } from '../src/cityTile.js';
 
 test('Cross traffic flows on green, clears the junction on red and queues before the crosswalk', () => {
   const traffic = new IntersectionTraffic(1);
@@ -76,4 +84,61 @@ test('An emergency clears civilians outwards and prevents respawning into the po
         positions,
       );
     }
+});
+
+test('Both lanes fade at either road end, stay solid at red and never overhang the tile', () => {
+  const traffic = new IntersectionTraffic(1);
+  for (const car of traffic.cars) {
+    for (const edge of [-1, 1]) {
+      const opacities = [];
+      for (const distance of [10.4, 10.8, 11.2, 11.42, 13, 14]) {
+        car.progress = (edge * distance - MAIN_ROAD_Z) / car.direction;
+        traffic.update(0, true);
+        opacities.push(car.opacity);
+        if (car.root.visible) assert.ok(Math.abs(car.root.position.z) + 1.51 < TILE_SIZE / 2);
+      }
+      assert.ok(opacities[0] > opacities[1] && opacities[1] > opacities[2]);
+      assert.ok(opacities[1] > 0 && opacities[1] < 1);
+      assert.deepEqual(opacities.slice(3), [0, 0, 0]);
+    }
+    car.progress = -5.8;
+    traffic.update(0, false);
+    assert.equal(car.opacity, 1);
+  }
+  traffic.dispose();
+});
+
+test('Car fading preserves city lighting, combines tile reveal and releases only owned materials', () => {
+  const tile = createCityTile(1, { theme: 'neonTokyo' });
+  const [a, b] = tile.traffic.cars;
+  a.progress = (11 - MAIN_ROAD_Z) / a.direction;
+  b.progress = 0;
+  tile.update(0, 1);
+  assert.ok(a.opacity > 0 && a.opacity < 1);
+  assert.equal(b.opacity, 1);
+  assert.equal(a.depthMaterial.opacity, a.opacity);
+  assert.equal(b.depthMaterial.opacity, 1);
+  assert.notEqual(a.depthMaterial, b.depthMaterial);
+  for (const [key, copy] of a.materials) {
+    const source = tile.records.get(key).material;
+    assert.notEqual(copy, source);
+    assert.equal(copy.onBeforeCompile, source.onBeforeCompile);
+    assert.equal(copy.opacity, a.opacity);
+    assert.equal(source.opacity, 1);
+    if (b.materials.has(key)) assert.notEqual(copy, b.materials.get(key));
+  }
+  const fade = a.opacity;
+  tile.update(0, 0.175);
+  assert.ok(Math.abs(a.opacity - fade * tile.reveal) < 1e-8);
+  tile.update(0, 0);
+  assert.ok(tile.traffic.cars.every((car) => !car.root.visible));
+  const counts = new Map();
+  for (const car of tile.traffic.cars)
+    for (const mat of [...car.materials.values(), car.depthMaterial]) {
+      counts.set(mat, 0);
+      mat.addEventListener('dispose', () => counts.set(mat, counts.get(mat) + 1));
+    }
+  tile.dispose();
+  tile.dispose();
+  assert.ok([...counts.values()].every((count) => count === 1));
 });

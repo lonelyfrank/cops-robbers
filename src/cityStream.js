@@ -2,10 +2,15 @@ import { createCityTile, createHaloTexture } from './cityTile.js';
 import { getCurrentTile, getTileWindow, getTileRole, getStopX, getCrossingX } from './mapLayout.js';
 import { MAX_CROSSINGS } from './gameMath.js';
 import { createCityLighting } from './cityEffects.js';
+import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
 
 /** Owns precisely three live districts and at most one dissolving old district. */
 export class CityStream {
-  constructor(scene, { reducedMotion = false, createTile = createCityTile } = {}) {
+  constructor(
+    scene,
+    { reducedMotion = false, createTile = createCityTile, theme = DEFAULT_CITY_THEME } = {},
+  ) {
+    this.theme = getCityTheme(theme);
     this.scene = scene;
     this.reducedMotion = reducedMotion;
     this.createTile = createTile;
@@ -57,6 +62,7 @@ export class CityStream {
         const tile = this.createTile(index, {
           lighting: this.lighting,
           haloTexture: this.haloTexture,
+          theme: this.theme.id,
         });
         const reveal = immediate || this.reducedMotion ? 1 : 0;
         tile.setSignal(this.signals.get(index) ?? 'red');
@@ -112,9 +118,11 @@ export class CityStream {
       });
     }
   }
-  reset() {
+  reset(themeId = this.theme.id) {
+    const nextTheme = getCityTheme(themeId);
     for (const { tile } of this.tiles.values()) tile.dispose();
     this.tiles.clear();
+    this.theme = nextTheme;
     this.playerX = getStopX(0);
     this.lighting.focusX.value = 0;
     this.lighting.capture.value = 0;

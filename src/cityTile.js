@@ -9,11 +9,7 @@ import {
   smoothStep,
 } from './cityEffects.js';
 
-const specialMaterials = {
-  window: { color: 0xe4a64f, emissive: 0xff9a26, power: 1.9 },
-  lantern: { color: 0xffedb0, emissive: 0xffb239, power: 3.6 },
-  sign: { color: 0x95cdd1, emissive: 0x458caa, power: 1.3 },
-};
+import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
 
 export function createHaloTexture() {
   // Tiny procedural light halo; shared across districts, never downloaded.
@@ -31,7 +27,11 @@ export function createHaloTexture() {
 }
 
 /** Tile owns its materials and instance buffers; a stream owns the shared halo texture. */
-export function createCityTile(index, { lighting = createCityLighting(), haloTexture } = {}) {
+export function createCityTile(
+  index,
+  { lighting = createCityLighting(), haloTexture, theme: themeId = DEFAULT_CITY_THEME } = {},
+) {
+  const theme = getCityTheme(themeId);
   const ownsTexture = !haloTexture;
   haloTexture ??= createHaloTexture();
   const root = new THREE.Group();
@@ -40,11 +40,11 @@ export function createCityTile(index, { lighting = createCityLighting(), haloTex
   const records = new Map();
   const getMaterial = (key) => {
     if (!records.has(key)) {
-      const config = specialMaterials[key] ?? { color: key };
+      const config = theme.materials[key] ?? { color: theme.colors[key] ?? key };
       const material = new THREE.MeshStandardMaterial({
         color: config.color,
-        roughness: 0.85,
-        metalness: 0,
+        roughness: config.roughness ?? 0.85,
+        metalness: config.metalness ?? 0,
         emissive: config.emissive ?? 0,
         emissiveIntensity: config.power ?? 0,
       });
@@ -58,9 +58,11 @@ export function createCityTile(index, { lighting = createCityLighting(), haloTex
     root,
     getMaterial,
     haloTexture,
+    theme.id,
   );
   const tile = {
     index,
+    themeId: theme.id,
     root,
     style,
     lighting,
@@ -126,7 +128,7 @@ export function createCityTile(index, { lighting = createCityLighting(), haloTex
           0.75;
     }
     tile.crossSignal = !trafficBlocked && tile.signal === 'red' ? 'green' : 'red';
-    traffic.update(dt, tile.crossSignal === 'green', reducedMotion, trafficBlocked);
+    traffic.update(dt, tile.crossSignal === 'green', reducedMotion, trafficBlocked, reveal.base);
     const signalKey = `${tile.signal}:${tile.crossSignal}:${tile.role}`;
     if (signalKey !== lastSignal || focus !== lastFocus) {
       for (const signal of signals)
@@ -149,6 +151,7 @@ export function createCityTile(index, { lighting = createCityLighting(), haloTex
     if (tile.disposed) return;
     tile.disposed = true;
     root.removeFromParent();
+    traffic.dispose();
     for (const { material } of records.values()) material.dispose();
     for (const signal of signals)
       for (const lamp of Object.values(signal.lamps)) lamp.material.dispose();

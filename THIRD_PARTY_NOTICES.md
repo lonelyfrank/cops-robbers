@@ -24,6 +24,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
+## Rajdhani (Medium, Bold)
+
+Copyright © 2014 Indian Type Foundry (info@indiantypefoundry.com)
+
+Licensed under the SIL Open Font License, Version 1.1. The bundled files are
+subsets of the originals, converted to WOFF2 and reduced to the Latin ranges the
+interface actually renders. The complete licence text ships alongside them in
+`src/assets/fonts/OFL.txt`.
+
 ## Vite 7.1.5 and bundled development components
 
 # Vite core license

@@ -11,7 +11,7 @@ export function createMotionPreference() {
     { signal: events.signal },
   );
   return {
-    get value() {
+    get reduced() {
       return query.matches;
     },
     subscribe(listener) {

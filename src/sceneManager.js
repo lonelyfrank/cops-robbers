@@ -14,6 +14,8 @@ const TUNING = Object.freeze({
   cameraResponse: 7.5,
   focusAhead: 4.7,
   captureZoom: 1.08,
+  monitorViewHeight: 31,
+  monitorMinViewWidth: 30,
   ambientSky: 0x779edc,
   ambientGround: 0x161e36,
   ambientPower: 0.56,
@@ -48,7 +50,7 @@ const TUNING = Object.freeze({
   reducedFlash: 0.09,
 });
 
-export function createSceneManager(canvas, container, { motion = { value: false } } = {}) {
+export function createSceneManager(canvas, container, { motion = { reduced: false } } = {}) {
   let disposed = false;
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -104,7 +106,7 @@ export function createSceneManager(canvas, container, { motion = { value: false 
     scene.add(light);
     return light;
   });
-  const stream = new CityStream(scene, { reducedMotion: motion.value });
+  const stream = new CityStream(scene, { reducedMotion: motion.reduced });
   const indicator = new THREE.Mesh(
     new THREE.RingGeometry(0.67, 0.79, 4),
     new THREE.MeshBasicMaterial({
@@ -136,22 +138,23 @@ export function createSceneManager(canvas, container, { motion = { value: false 
   );
   roadMultiplier.name = 'road-multiplier';
   roadMultiplier.rotation.x = -Math.PI / 2;
+  // Keep the decal on the asphalt, with its baseline parallel to the camera's right axis.
+  roadMultiplier.rotation.z = Math.atan2(cameraOffset.x, cameraOffset.z);
   roadMultiplier.visible = false;
   scene.add(roadMultiplier);
-  const flash = document.getElementById('police-flash'),
-    streetCaption = document.getElementById('street-caption');
+  const flash = document.getElementById('police-flash');
   let targetCrossing = 1,
     multiplierText = '';
   let width = 1,
     height = 1,
     followX = getStopX(0),
-    thief = null,
-    lastCaption = '';
+    thief = null;
   function resize() {
     width = Math.max(1, container.clientWidth);
     height = Math.max(1, container.clientHeight);
     const aspect = width / height,
-      viewHeight = Math.max(34, 40 / aspect);
+      // A tighter crop fills the CCTV monitor while retaining the isometric camera angle.
+      viewHeight = Math.max(TUNING.monitorViewHeight, TUNING.monitorMinViewWidth / aspect);
     camera.left = (-viewHeight * aspect) / 2;
     camera.right = (viewHeight * aspect) / 2;
     camera.top = viewHeight / 2;
@@ -167,8 +170,12 @@ export function createSceneManager(canvas, container, { motion = { value: false 
     else if (value === 'caught') stream.setCaught(true);
     // Keep blue capture flashes through a losing result, until replay/reset.
   }
-  function reset() {
-    stream.reset();
+  function reset(themeId = stream.theme.id) {
+    stream.reset(themeId);
+    key.color.set(stream.theme.keyColor);
+    warmLights.forEach((light, i) =>
+      light.color.set(i % 2 ? stream.theme.accentColor : stream.theme.warmColor),
+    );
     followX = getStopX(0);
     focus.set(0, 1.1, 1.1);
     camera.zoom = 1;
@@ -202,15 +209,11 @@ export function createSceneManager(canvas, container, { motion = { value: false 
       MAIN_ROAD_Z,
     );
     roadMultiplier.material.opacity = tile?.reveal ?? 0;
-    const caption = `TRATTO ${String(stream.current).padStart(2, '0')} / ${MAX_CROSSINGS} · ${stream.caught ? 'SIRENE ALLE SPALLE' : 'VIA DELLA FUGA'}`;
-    if (caption !== lastCaption) {
-      streetCaption.textContent = caption;
-      lastCaption = caption;
-    }
   }
+
   function update(dt, elapsed) {
     if (disposed) return;
-    const reducedMotion = motion.value;
+    const reducedMotion = motion.reduced;
     stream.reducedMotion = reducedMotion;
     if (thief) stream.setPlayerX(thief.position.x);
     stream.update(dt);
@@ -233,11 +236,16 @@ export function createSceneManager(canvas, container, { motion = { value: false 
     camera.updateMatrixWorld();
     key.position.set(lightX - 3, 23, 1);
     key.target.position.set(lightX, 0, 0);
-    key.intensity = TUNING.keyPower * (1 - TUNING.captureDimming * capture);
+    key.intensity = stream.theme.keyPower * (1 - TUNING.captureDimming * capture);
     const offsets = TUNING.warmOffsets;
     for (let i = 0; i < warmLights.length; i++) {
-      warmLights[i].position.set(lightX + offsets[i][0], TUNING.warmHeight, offsets[i][1]);
-      warmLights[i].intensity = TUNING.warmPower * (1 - TUNING.captureDimming * capture);
+      warmLights[i].position.set(
+        lightX + offsets[i][0],
+        stream.theme.fillHeight ?? TUNING.warmHeight,
+        offsets[i][1],
+      );
+      warmLights[i].intensity =
+        (stream.theme.fillPower ?? TUNING.warmPower) * (1 - TUNING.captureDimming * capture);
     }
     const signal = stream.activeTile.signal;
     signalLight.position.set(occupiedX + 3.72, 2.8, MAIN_ROAD_Z - 3.1);
@@ -288,7 +296,7 @@ export function createSceneManager(canvas, container, { motion = { value: false 
     renderer,
     stream,
     get reducedMotion() {
-      return motion.value;
+      return motion.reduced;
     },
     reset,
     update,

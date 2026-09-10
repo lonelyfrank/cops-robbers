@@ -1,26 +1,69 @@
 import * as THREE from 'three';
-import { createTrafficCar } from './voxelModels.js';
+import { createTrafficCar, material } from './voxelModels.js';
 import { MAIN_ROAD_Z, TILE_SIZE } from './mapLayout.js';
+import { smoothStep } from './cityEffects.js';
 
 const STOP_LINE = -5.8;
 const LOOP_HALF = 18;
 const COLORS = [0xcda949, 0x607f9d, 0xa75b53, 0xc3c9cc, 0x548676];
+// Include the full bumper: cars finish fading while still supported by the road.
+const VISIBLE_EDGE = TILE_SIZE / 2 - 1.51 - 0.08;
 
 /** One car per direction, recycled outside the diorama. No traffic can enter on red. */
 export class IntersectionTraffic {
-  constructor(index, getMaterial) {
+  constructor(index, getMaterial = material) {
     this.root = new THREE.Group();
     this.root.name = 'cross-traffic';
     this.cars = [-1, 1].map((direction, lane) => {
       const variant = (index * 3 + lane) % COLORS.length;
-      const { root } = createTrafficCar(COLORS[variant], variant === 0, getMaterial);
+      const materials = new Map();
+      const { root } = createTrafficCar(COLORS[variant], variant === 0, (key) => {
+        if (!materials.has(key)) {
+          const source = getMaterial(key),
+            copy = source.clone();
+          // Preserve the city's continuous lighting shader without sharing car opacity.
+          copy.onBeforeCompile = source.onBeforeCompile;
+          copy.customProgramCacheKey = source.customProgramCacheKey;
+          copy.alphaHash = true;
+          materials.set(key, copy);
+        }
+        return materials.get(key);
+      });
+      const depthMaterial = new THREE.MeshDepthMaterial({
+        depthPacking: THREE.RGBADepthPacking,
+        alphaHash: true,
+      });
+      // Packed shadow depth ignores material.opacity, so supply it to alpha hashing explicitly.
+      depthMaterial.onBeforeCompile = (shader) => {
+        shader.uniforms.trafficOpacity = {
+          get value() {
+            return depthMaterial.opacity;
+          },
+        };
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform float trafficOpacity;')
+          .replace(
+            'vec4 diffuseColor = vec4( 1.0 );',
+            'vec4 diffuseColor = vec4(1.0, 1.0, 1.0, trafficOpacity);',
+          );
+      };
+      depthMaterial.customProgramCacheKey = () => 'traffic-shadow-fade-v1';
+      root.traverse((object) => {
+        if (object.isInstancedMesh) object.customDepthMaterial = depthMaterial;
+      });
       root.rotation.y = direction === 1 ? 0 : Math.PI;
       this.root.add(root);
-      return { root, direction, progress: -12 + ((index * 7 + lane * 13) % 24) };
+      return {
+        root,
+        materials,
+        depthMaterial,
+        direction,
+        progress: -12 + ((index * 7 + lane * 13) % 24),
+      };
     });
     this.update(0, true);
   }
-  update(dt, open, reducedMotion = false, emergency = false) {
+  update(dt, open, reducedMotion = false, emergency = false, tileOpacity = 1) {
     for (const car of this.cars) {
       // Clear both lanes for the arriving patrols without respawning into the roadblock.
       if (emergency) {
@@ -43,8 +86,28 @@ export class IntersectionTraffic {
         0.03,
         MAIN_ROAD_Z + car.direction * car.progress,
       );
-      // Recycling occurs past the street ends, never in view at the intersection.
-      car.root.visible = Math.abs(car.root.position.z) < TILE_SIZE / 2 + 1.5;
+      // Short entrance fade leaves queued cars solid; a longer exit fade eases departures.
+      const remaining = VISIBLE_EDGE - Math.abs(car.root.position.z);
+      const fade = reducedMotion
+        ? Number(remaining > 0)
+        : smoothStep(remaining / (car.progress < 0 ? 0.9 : 2.6));
+      car.opacity = fade * tileOpacity;
+      car.root.visible = car.opacity > 0;
+      for (const material of car.materials.values()) material.opacity = car.opacity;
+      car.depthMaterial.opacity = car.opacity;
     }
+  }
+  dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.root.removeFromParent();
+    for (const car of this.cars) {
+      for (const material of car.materials.values()) material.dispose();
+      car.depthMaterial.dispose();
+    }
+    this.root.traverse((object) => {
+      if (object.isInstancedMesh) object.dispose();
+    });
+    this.root.clear();
   }
 }

@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { VoxelBatch, box } from './voxelModels.js';
 import { TILE_SIZE, MAIN_ROAD_Z, ALLEY_LOCAL_X } from './mapLayout.js';
 import { IntersectionTraffic } from './trafficController.js';
+import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
+import { neonBuilding, neonStreetDetails } from './neonDistrict.js';
 export const SIGNAL_COLORS = Object.freeze({ red: 0xff365b, yellow: 0xffbd3f, green: 0x8bff7e });
 
 function randomFor(index) {
@@ -12,7 +14,8 @@ function randomFor(index) {
   };
 }
 
-export function getDistrictStyle(index) {
+export function getDistrictStyle(index, themeId = DEFAULT_CITY_THEME) {
+  const theme = getCityTheme(themeId);
   const random = randomFor(index + 503);
   const palettes = [
     [0x966b55, 0xa45f49, 0x86624e],
@@ -22,8 +25,9 @@ export function getDistrictStyle(index) {
   const colors = palettes[index % palettes.length],
     awning = [0xbd4d4e, 0x537f88, 0xb39651][index % 3];
   return {
+    themeId: theme.id,
     amenity: index % 3,
-    treeScale: 0.86 + random() * 0.2,
+    treeScale: (theme.neon ? 1 : 0.86) + random() * 0.2,
     buildings: [
       {
         x: -8.15,
@@ -280,9 +284,16 @@ function buildFoundation(batch, random) {
     }
 }
 
-export function buildDistrictGeometry(index, root, getMaterial, haloTexture) {
+export function buildDistrictGeometry(
+  index,
+  root,
+  getMaterial,
+  haloTexture,
+  themeId = DEFAULT_CITY_THEME,
+) {
+  const theme = getCityTheme(themeId);
   const random = randomFor(index),
-    style = getDistrictStyle(index),
+    style = getDistrictStyle(index, theme.id),
     halos = [],
     signals = [],
     emerging = [];
@@ -303,12 +314,14 @@ export function buildDistrictGeometry(index, root, getMaterial, haloTexture) {
   }
   for (const [i, config] of style.buildings.entries()) {
     const buildingBatch = new VoxelBatch();
-    building(buildingBatch, config.x, config.z, config);
+    if (theme.neon) neonBuilding(buildingBatch, config, index + i);
+    else building(buildingBatch, config.x, config.z, config);
     buildingBatch.build(growthGroup(`building-${i}`, i * 0.12), getMaterial);
   }
   const objectRoot = growthGroup('street-objects', 0.08);
   batch = new VoxelBatch();
-  urbanAmenity(batch, style.amenity);
+  if (theme.neon) neonStreetDetails(batch);
+  else urbanAmenity(batch, style.amenity);
   // Trees, planted courtyards and block walls fill the spaces between buildings.
   for (const [x, z, scale] of [
     [-11.2, -10.8, 0.88],
@@ -361,7 +374,7 @@ export function buildDistrictGeometry(index, root, getMaterial, haloTexture) {
     batch.add(0x3d4b5c, [0.49, 0.12, 0.49], [x, 3.1, z]);
     const material = new THREE.SpriteMaterial({
       map: haloTexture,
-      color: 0xffb14d,
+      color: theme.haloColor,
       transparent: true,
       opacity: 0,
       depthWrite: false,

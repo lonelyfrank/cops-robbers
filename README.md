@@ -2,6 +2,24 @@
 
 Prototipo giocabile in browser, completamente client-side, con Vite, JavaScript e Three.js. Città voxel notturna, tre difficoltà, 12 incroci, animazioni di corsa/arresto/fuga e crediti esclusivamente virtuali. Versione 1.1: mappa modulare e inseguimento luminoso, ispirati alla [reference fornita](docs/reference.png).
 
+## Temi e avvio del gioco
+
+La città originale si chiama **Distretto 87**. Il nuovo tema **Neon Tokyo** propone facciate scure in vetro, finestre ambrate, profili ciano, insegne magenta integrate negli edifici, negozi di ramen, distributori e giardini sui tetti. Finestre suddivise da montanti, schermature in legno, tende noren e lanterne di carta danno profondità alle facciate. I neon rimangono sulle insegne e sui profili, con luce diffusa e asfalto opaco per evitare macchie ciano/magenta artificiali.
+
+I temi si alternano a ogni nuova corsa accettata: l’anteprima iniziale mostra Distretto 87, la prima corsa parte a Neon Tokyo, la seconda a Distretto 87 e così via. Il tema resta fisso per tutti i dodici incroci, l’incasso e la cattura. Al cambio vengono eliminate tutte le tile precedenti, incluse quelle in uscita: nessuna partita contiene quartieri di temi diversi. Il ripristino della demo non avanza la rotazione. La scelta è puramente scenografica, senza campionare il generatore degli esiti.
+
+Il logo locale `cops&robbers-logo.png` sostituisce il titolo testuale. All’apertura della pagina una breve schermata con logo e barra presenta la preparazione del gioco: il progresso è scenografico e raggiunge il 100% solo dopo il primo rendering della città. Durante la preparazione i controlli sono bloccati. Non viene ripetuta tra le corse; il movimento ridotto abbrevia la presentazione. L’HTML autonomo incorpora anche il logo e funziona senza connessione.
+
+La dicitura **PUNTATA: x CR** è in basso al centro della scena. Il riepilogo in alto mostra l’incasso quando disponibile; la vecchia didascalia del tratto è rimossa.
+
+## Plancia di sorveglianza
+
+La UI riprende una console CCTV: cornice metallica con viti e feritoie, indicatore REC, numero della telecamera, distretto corrente e orologio locale. Un reticolo discreto e leggere scanline sono sovrapposti al canvas; geometrie, camera isometrica, illuminazione e animazioni della città rimangono quelle del gioco.
+
+La barra superiore presenta il logo e il saldo in CR. La **sequenza telecamere** collega CAM 01–12 con una strada tratteggiata e distingue il percorso superato, il prossimo varco e l’arresto. Il pannello inferiore contiene la puntata con decimali italiani e tasti ½ / 2× / MAX, il selettore **Livello allerta** a semaforo e la probabilità del prossimo verde su una barra segmentata. Il pulsante **Corri!** avvia una corsa oppure prosegue al prossimo incrocio; **Incassa** mostra l’importo disponibile. Nel risultato la barra presenta il primo varco della nuova corsa, senza riutilizzare la probabilità della precedente.
+
+Su tablet e telefono i pannelli si dispongono su più righe e la sequenza CAM scorre orizzontalmente. Stato dei pulsanti, focus da tastiera, validazione della puntata, testo degli esiti e preferenza di movimento ridotto restano supportati. L’orologio viene rilasciato insieme alla UI durante il rimontaggio.
+
 ## Città modulare
 
 Ogni modulo è un diorama quadrato di 26 × 26 unità con un solo incrocio, tre edifici in mattoni, negozi con tende, finestre calde, tetti piatti, alberi, aiuole, marciapiedi e una base a strati voxel. Le strade principali di due moduli consecutivi combaciano senza interruzioni.
@@ -18,6 +36,8 @@ La luce segue il ladro con una sfumatura continua nello spazio, anche sui bordi 
 
 Anche all'inizio e alla fine rimangono tre moduli: un quartiere di avvicinamento prima del primo incrocio e un quartiere di uscita lievemente illuminato dopo l'ultimo. Questi due moduli scenografici non aggiungono puntate o incroci al percorso di gioco.
 
+Il moltiplicatore rimane dipinto fra le strisce pedonali, con la scritta allineata orizzontalmente alla visuale del giocatore. Le auto perpendicolari compaiono e scompaiono in dissolvenza, incluse le ombre, prima che il paraurti raggiunga la fine della strada; le auto in attesa al rosso restano pienamente visibili.
+
 Il rosso di attesa lascia passare le auto in perpendicolare. Al clic con esito verde si aprono insieme l’incrocio del ladro e quello della pattuglia precedente: entrambi avanzano con la stessa progressione e si fermano di nuovo al rosso. Le auto già impegnate liberano l’incrocio, le altre si fermano prima delle strisce. In caso di perdita il traffico civile libera gli accessi, la luce calda si attenua e **quattro pattuglie circondano il ladro**: quella alle spalle si avvicina, una entra dal fondo della strada di fronte e altre due arrivano dai lati dell’incrocio. La camera stringe leggermente sul ladro e il riepilogo compare in basso per lasciare visibile l’accerchiamento. Un riflesso blu pulsa ai bordi della scena. L'effetto continua nel risultato di arresto e si azzera alla nuova partita o al ripristino. La preferenza di movimento ridotto rende le luci stabili ed elimina risalite e dissolvenze; i cambiamenti di preferenza vengono recepiti anche durante la sessione.
 
 Ogni modulo varia in modo deterministico colori, larghezze e piani degli edifici, tende dei negozi, scale antincendio, serbatoi sui tetti e arredo urbano (pensilina, ingresso metro o edicola). Le strade mantengono raccordi identici. Il traffico e le decorazioni non influenzano le probabilità di gioco.
@@ -28,7 +48,7 @@ Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in
 
 ## Prossimi sviluppi
 
-La priorità è migliorare la UI desktop/mobile; la scena del minigioco è la base approvata. L’elicottero è rimosso dall’implementazione attiva e resta una funzione da revisionare nella [roadmap](docs/ROADMAP.md), con criteri espliciti prima della reintroduzione.
+La prima plancia CCTV è implementata; i prossimi ritocchi riguardano leggibilità, proporzioni e uso su dispositivi mobili. La scena del minigioco resta la base approvata. L’elicottero è rimosso dall’implementazione attiva e resta una funzione da revisionare nella [roadmap](docs/ROADMAP.md), con criteri espliciti prima della reintroduzione.
 
 ## Avvio
 
@@ -59,9 +79,9 @@ La normale build `dist/` va servita via HTTP. Per l'apertura diretta da disco, u
 
 ## Come si gioca
 
-1. Il saldo iniziale è di **1.000 CR**. Scegli difficoltà e puntata, poi premi **Avvia la fuga**.
-2. La puntata viene scalata una sola volta. Il semaforo restituisce subito verde oppure rosso al clic su **Avvia la fuga** o **Prossimo incrocio**.
-3. Con il verde, il ladro corre oltre l'incrocio. A corsa conclusa puoi scegliere **Prossimo incrocio** o **Incassa**. Non c'è un timer sulla decisione.
+1. Il saldo iniziale è di **1.000 CR**. Scegli difficoltà e puntata, poi premi **Corri!**.
+2. La puntata viene scalata una sola volta. Il semaforo restituisce subito verde oppure rosso al clic su **Corri!**.
+3. Con il verde, il ladro corre oltre l'incrocio. A corsa conclusa puoi scegliere **Corri!** o **Incassa**. Non c'è un timer sulla decisione.
 4. Con un esito rosso, quattro pattuglie circondano il ladro da dietro, davanti e dai due lati. Il ladro si ferma e alza le mani. La puntata è persa. A fine animazione puoi avviare un'altra partita.
 5. Incassando dopo qualsiasi incrocio superato, il ladro svolta nel vicolo. Viene accreditato il totale mostrato, senza bonus separati.
 6. Al **12° incrocio**, l'incasso e la fuga nel vicolo sono automatici. Il limite evita percorsi indefiniti e valori fuori scala nel prototipo.
@@ -116,6 +136,9 @@ Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni 
 | `src/sceneManager.js`         | Renderer WebGL, camera isometrica, illuminazione del modulo occupato, riflesso blu e moltiplicatore sull'asfalto tra le strisce pedonali. |
 | `src/mapLayout.js`            | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                             |
 | `src/cityEffects.js`          | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                               |
+| `src/cityThemes.js`           | Palette e identità dei temi, rotazione per corsa indipendente dagli esiti.                                                                |
+| `src/neonDistrict.js`         | Architettura, insegne e arredo di Neon Tokyo.                                                                                             |
+| `src/bootScreen.js`           | Presentazione iniziale con barra, blocco dei controlli e pulizia dei timer.                                                               |
 | `src/districtGeometry.js`     | Geometria dei quartieri, fondazioni, architettura, arredo e vicoli sui due lati della fermata.                                            |
 | `src/format.js`               | Formatter numerici condivisi, indipendenti dal DOM.                                                                                       |
 | `src/motionPreference.js`     | Unica preferenza di movimento ridotto, aggiornata anche a runtime.                                                                        |
@@ -146,9 +169,9 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 ## Verifica
 
-**57 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
+**62 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
 
-I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico.
+I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico. Verificati anche la rotazione dei temi, dodici incroci senza mescolanza di tile, il logo nel browser e nell’HTML autonomo offline, la barra iniziale e la puntata centrata.
 
 La workflow `.github/workflows/checks.yml` esegue formattazione, test, build e verifica che l’HTML autonomo committato sia aggiornato. L’esecuzione remota partirà al prossimo push. Dettagli della revisione e limiti delle misure: [revisione tecnica](docs/TECHNICAL_REVIEW.md).
 

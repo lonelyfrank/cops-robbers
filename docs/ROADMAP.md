@@ -2,17 +2,19 @@
 
 Aggiornata il 10 settembre 2026.
 
-## 1. Prossima priorità: UI
+## 1. UI: plancia CCTV e rifiniture
 
 La scena del minigioco è approvata come base. Il prossimo intervento riguarda l’interfaccia che la accompagna.
 
 - Migliorare gerarchia e leggibilità di saldo, puntata, moltiplicatore raggiunto e prossimo obiettivo.
-- Rendere più chiari i comandi Avvia, Prosegui e Incassa e il loro stato durante le animazioni.
+- Rifinire feedback e gerarchia dei comandi Corri! e Incassa durante le animazioni.
 - Ridurre l’ingombro degli overlay sulla scena, soprattutto su mobile.
 - Rifinire percorso, storico e riepiloghi di vittoria/perdita con spaziature e tipografia coerenti.
 - Verificare touch, tastiera, contrasto, movimento ridotto e assenza di sovrapposizioni su desktop/mobile.
 
-La preparazione tecnica è completata: CSS consolidato per breakpoint, scala tipografica, rendering UI suddiviso e lookup DOM memorizzati, gestione HMR e risorse corretta, formatter e controlli CI configurati. Il redesign visivo resta il prossimo intervento. La revisione dell’elicottero resta separata.
+Primo intervento UI completato: logo grafico, presentazione iniziale con barra, puntata centrata e rimozione delle informazioni sul tratto. Aggiunti i temi Distretto 87 e Neon Tokyo, alternati per corsa senza mescolare tile.
+
+La preparazione tecnica è completata: CSS consolidato per breakpoint, scala tipografica, rendering UI suddiviso e lookup DOM memorizzati, gestione HMR e risorse corretta, formatter e controlli CI configurati. Implementato il primo redesign CCTV dalla reference: monitor di sorveglianza, schede CAM collegate, puntata su display, allerta a semaforo, probabilità segmentata e comando Corri!. Prossimo intervento: rifinire la plancia con feedback reali, soprattutto proporzioni e interazione mobile. La revisione dell’elicottero resta separata.
 
 ## 2. Da revisionare: fuga in elicottero
 

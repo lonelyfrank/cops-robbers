@@ -188,7 +188,13 @@ test('Credit input accepts Italian decimals and rejects precision loss or invali
   assert.equal(parseBet('25'), 2500);
   assert.equal(parseBet('1,25'), 125);
   assert.equal(parseBet(' 25.01 '), 2501);
-  for (const text of ['', 'abc', '-25', '1e3', '1.234', '1.234,50', 'Infinity', '9007199254740993'])
+  // A decimal comma disambiguates the dots, so the grouped amounts the interface itself
+  // prints (balance 1.000,00; the maximum quoted as 1.000.000,00) can be pasted back in.
+  assert.equal(parseBet('1.000,00'), 100000);
+  assert.equal(parseBet('1.234,50'), 123450);
+  assert.equal(parseBet('1.000.000,00'), 100000000);
+  // Without that comma a lone dot stays ambiguous and is still refused.
+  for (const text of ['', 'abc', '-25', '1e3', '1.234', 'Infinity', '9007199254740993'])
     assert.equal(parseBet(text), null);
 });
 
