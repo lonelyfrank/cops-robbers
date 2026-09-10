@@ -6,11 +6,11 @@ Prototipo giocabile in browser, completamente client-side, con Vite, JavaScript 
 
 Ogni modulo è un diorama quadrato di 26 × 26 unità con un solo incrocio, tre edifici in mattoni, negozi con tende, finestre calde, tetti piatti, alberi, aiuole, marciapiedi e una base a strati voxel. Le strade principali di due moduli consecutivi combaciano senza interruzioni.
 
-| Modulo | Illuminazione e comportamento |
-| --- | --- |
+| Modulo     | Illuminazione e comportamento                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
 | Precedente | Luce tenue e finestre accese; la pattuglia aspetta al rosso prima delle strisce, bloccata dal traffico trasversale. |
-| Attuale | Luce calda più intensa, moltiplicatore sull’asfalto e ladro in attesa al rosso prima della scelta. |
-| Prossimo | Luce tenue, edifici leggibili, lampioni e finestre debolmente accesi; traffico e semafori già presenti. |
+| Attuale    | Luce calda più intensa, moltiplicatore sull’asfalto e ladro in attesa al rosso prima della scelta.                  |
+| Prossimo   | Luce tenue, edifici leggibili, lampioni e finestre debolmente accesi; traffico e semafori già presenti.             |
 
 Il cambio di ruolo dipende dalla **posizione reale del ladro**, non dal numero visualizzato nel percorso. Dopo un verde, il ladro attraversa l'incrocio e raggiunge la fermata prima di quello successivo. Quando oltrepassa il confine del modulo, la nuova zona riceve la luce principale, quella lasciata alle spalle torna alla luce tenue e viene preparato il prossimo modulo.
 
@@ -45,13 +45,13 @@ Per provare il gioco senza installazione, apri **cops-and-robbers.html** in un b
 
 ## Comandi disponibili
 
-| Comando | Risultato |
-| --- | --- |
-| `npm run dev` | Server di sviluppo Vite con accesso dalla LAN. |
-| `npm test` | Test deterministici della matematica, dello stato e delle animazioni. |
-| `npm run build` | Build statica di produzione nella cartella `dist/`. |
-| `npm run preview` | Serve la build di produzione, normalmente sulla porta 4173. |
-| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`. |
+| Comando                    | Risultato                                                             |
+| -------------------------- | --------------------------------------------------------------------- |
+| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                        |
+| `npm test`                 | Test deterministici della matematica, dello stato e delle animazioni. |
+| `npm run build`            | Build statica di produzione nella cartella `dist/`.                   |
+| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.           |
+| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                     |
 
 La normale build `dist/` va servita via HTTP. Per l'apertura diretta da disco, usa l'HTML autonomo. Dopo modifiche ai sorgenti, rigenera entrambe le build se vuoi distribuirle aggiornate.
 
@@ -83,15 +83,15 @@ M_totale(n, d) = RTP_TARGET / P(n, d)
 P(n, d) × M_totale(n, d) = 0.96
 ```
 
-| Parametro | Valore iniziale | Posizione |
-| --- | --- | --- |
-| RTP target | `0.96` | `RTP_TARGET`, `gameMath.js` |
-| Probabilità del primo verde | `0.95` | `INITIAL_GREEN_PROBABILITY`, `gameMath.js` |
-| Decadimento facile / medio / difficile | `0.035 / 0.065 / 0.10` | `DIFFICULTIES`, `gameMath.js` |
-| Probabilità minima | `0.12` | `MIN_GREEN_PROBABILITY`, `gameMath.js` |
-| Incroci massimi | `12` | `MAX_CROSSINGS`, `gameMath.js` |
-| Saldo iniziale | `100000` centesimi di CR | `INITIAL_BALANCE`, `gameState.js` |
-| Puntata minima / massima | `1 / 1000000 CR` | `MIN_BET` / `MAX_BET`, `gameState.js` |
+| Parametro                              | Valore iniziale          | Posizione                                  |
+| -------------------------------------- | ------------------------ | ------------------------------------------ |
+| RTP target                             | `0.96`                   | `RTP_TARGET`, `gameMath.js`                |
+| Probabilità del primo verde            | `0.95`                   | `INITIAL_GREEN_PROBABILITY`, `gameMath.js` |
+| Decadimento facile / medio / difficile | `0.035 / 0.065 / 0.10`   | `DIFFICULTIES`, `gameMath.js`              |
+| Probabilità minima                     | `0.12`                   | `MIN_GREEN_PROBABILITY`, `gameMath.js`     |
+| Incroci massimi                        | `12`                     | `MAX_CROSSINGS`, `gameMath.js`             |
+| Saldo iniziale                         | `100000` centesimi di CR | `INITIAL_BALANCE`, `gameState.js`          |
+| Puntata minima / massima               | `1 / 1000000 CR`         | `MIN_BET` / `MAX_BET`, `gameState.js`      |
 
 `RTP_TARGET` cambia il livello dei moltiplicatori; i `decay` cambiano la velocità di crescita del rischio. Sono volutamente parametri separati. Se abbassi il target sotto la probabilità iniziale, il primo moltiplicatore può scendere sotto 1: per mantenere il primo passaggio in utile, calibra anche la probabilità iniziale.
 
@@ -105,23 +105,23 @@ Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni 
 
 ## Moduli
 
-| File | Responsabilità |
-| --- | --- |
-| `src/gameMath.js` | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio. |
-| `src/gameState.js` | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico. |
-| `src/sceneManager.js` | Renderer WebGL, camera isometrica, illuminazione del modulo occupato, riflesso blu e moltiplicatore sull'asfalto tra le strisce pedonali. |
-| `src/mapLayout.js` | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene. |
-| `src/cityEffects.js` | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa. |
-| `src/cityTile.js` | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo. |
-| `src/trafficController.js` | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce. |
-| `src/cityStream.js` | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete. |
-| `src/voxelModels.js` | Geometrie condivise, modelli di ladro/auto e batch di istanze statiche. |
-| `src/characterController.js` | Corsa simultanea di ladro e pattuglia, crescita della sacca, accerchiamento da quattro direzioni, fuga nel vicolo. |
-| `src/ui.js` | Overlay, input, validazione, pulsanti, storico e regole. |
-| `src/main.js` | Collegamento tra stato e scena e ciclo `requestAnimationFrame`. |
-| `src/style.css` | Layout, palette, responsività, dialogo e preferenza di movimento ridotto. |
-| `scripts/buildStandalone.mjs` | Esportazione della build in un singolo HTML senza richieste esterne. |
-| `tests/` | Test con il runner nativo di Node.js; nessun framework di test aggiuntivo. |
+| File                          | Responsabilità                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/gameMath.js`             | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio.                                                |
+| `src/gameState.js`            | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico.                                                            |
+| `src/sceneManager.js`         | Renderer WebGL, camera isometrica, illuminazione del modulo occupato, riflesso blu e moltiplicatore sull'asfalto tra le strisce pedonali. |
+| `src/mapLayout.js`            | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                             |
+| `src/cityEffects.js`          | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                               |
+| `src/cityTile.js`             | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo.                           |
+| `src/trafficController.js`    | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce.                                                    |
+| `src/cityStream.js`           | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete.                                        |
+| `src/voxelModels.js`          | Geometrie condivise, modelli di ladro/auto e batch di istanze statiche.                                                                   |
+| `src/characterController.js`  | Corsa simultanea di ladro e pattuglia, crescita della sacca, accerchiamento da quattro direzioni, fuga nel vicolo.                        |
+| `src/ui.js`                   | Overlay, input, validazione, pulsanti, storico e regole.                                                                                  |
+| `src/main.js`                 | Collegamento tra stato e scena e ciclo `requestAnimationFrame`.                                                                           |
+| `src/style.css`               | Layout, palette, responsività, dialogo e preferenza di movimento ridotto.                                                                 |
+| `scripts/buildStandalone.mjs` | Esportazione della build in un singolo HTML senza richieste esterne.                                                                      |
+| `tests/`                      | Test con il runner nativo di Node.js; nessun framework di test aggiuntivo.                                                                |
 
 Gli stati sono `idle → running → ready`, con ritorno immediato a `running` al clic per proseguire se il semaforo è verde. Il rosso porta a `caught → result`; l'incasso porta a `escaping → result`. Puntata e difficoltà sono bloccate durante una partita. Le guardie impediscono doppi accrediti, doppie partenze e incassi durante un attraversamento o un arresto.
 
