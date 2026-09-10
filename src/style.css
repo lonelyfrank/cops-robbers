@@ -38,7 +38,7 @@ svg{display:block}
 .potential-label{font-size:13px;margin:0 0 6px;color:#a9b5c6}
 .potential-value{font-size:21px;font-weight:600;margin:0;color:#e6ecf5;letter-spacing:-.4px}
 .potential-value>span:last-child{color:#98a9bb;font-size:12px;letter-spacing:1px;margin-left:3px}
-.bonus-pill{display:inline-block;margin-top:16px;background:#bbf27419;border:1px solid #a5d66e4a;color:var(--lime);padding:7px;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:.6px}
+
 .next-signal{position:absolute;top:97px;right:28px;display:flex;align-items:flex-end;flex-direction:column;gap:5px;text-shadow:0 2px 15px #10151f}
 .next-signal .eyebrow{font-size:12px}
 .next-signal strong{font-family:"SFMono-Regular",Consolas,monospace;font-size:30px;font-weight:500;color:var(--lime);letter-spacing:-1.8px}
@@ -48,12 +48,6 @@ svg{display:block}
 .next-multiplier b{font-family:Consolas,monospace;font-size:16px;color:var(--lime);margin-left:5px}
 .street-caption{position:absolute;bottom:21px;left:28px;font-size:12px;letter-spacing:2.5px;color:#91a0b3;display:flex;align-items:center;gap:10px}
 .street-caption-line{height:1px;width:26px;background:#8999ad}
-.countdown{position:absolute;top:45%;left:55%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;padding:18px 28px;background:#0c131deb;border:1px solid #ccb45170;border-radius:12px;box-shadow:0 8px 40px #0005;pointer-events:none;min-width:175px}
-.countdown-light{width:9px;height:9px;background:var(--yellow);box-shadow:0 0 20px var(--yellow);border-radius:50%;margin-bottom:6px}
-.countdown strong{font-family:Consolas,monospace;font-size:47px;font-weight:400;color:var(--yellow)}
-.countdown>span{font-size:12px;letter-spacing:1.7px;color:#c6c3b6}
-.countdown-track{height:2px;width:100%;margin-top:14px;background:#8b7a3440;overflow:hidden}
-.countdown-track i{display:block;height:100%;background:var(--yellow);transform-origin:left}
 .result-banner{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);background:#151e2af2;border:1px solid #7da1546b;border-radius:14px;padding:22px 28px;text-align:center;display:flex;flex-direction:column;gap:9px;width:min(380px,58%);box-shadow:0 20px 50px #0005;pointer-events:none}
 .result-banner strong{font-family:Impact,"Arial Narrow",sans-serif;font-size:40px;letter-spacing:.5px;color:var(--lime)}
 .result-banner>span:last-child{font-size:13px;line-height:1.5;color:#c5cdd9}
@@ -69,8 +63,8 @@ svg{display:block}
 .route-area{padding:0 26px 20px;margin-top:-1px;background:linear-gradient(#121923,var(--surface));position:relative}
 .route-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12px;font-weight:500;letter-spacing:1.3px;color:#95a1b3}
 .route-header strong{color:#e1e7ef;font-size:12px;margin-left:10px;font-family:Consolas,monospace;font-weight:400;letter-spacing:.3px}
-.route-header>span:last-child{display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:0;color:#bfc7cf}
-.route-header svg{width:18px;height:18px;fill:none;stroke:var(--yellow);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+
 .route{list-style:none;margin:0;padding:0;display:flex;gap:7px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#455261 transparent}
 .route-step{flex:1;min-width:80px;padding:11px 5px 10px;border:1px solid #303947;border-radius:7px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;color:#9aa6b7;background:#1a212d55}
 .route-step .step-n{font-family:Consolas,monospace;font-size:12px;color:#75849a}
@@ -80,7 +74,7 @@ svg{display:block}
 .route-step.is-current{box-shadow:inset 0 -2px var(--lime)}
 .route-step.is-current .step-n,.route-step.is-passed .step-n{color:#a9c18d}
 .route-step.is-caught{border-color:#eb7a7d88;background:#eb7a7d15;color:var(--red)}
-.route-step.is-heli:after{content:"";width:4px;height:4px;background:var(--yellow);border-radius:50%;position:absolute;top:5px;right:6px}
+
 .game-controls{border-top:1px solid var(--line);display:grid;grid-template-columns:1.05fr 1.15fr 1.2fr;gap:27px;padding:23px 26px 20px;background:#171d26;align-items:start}
 fieldset{padding:0;margin:0;border:0;min-width:0}
 legend{font-size:13px;color:#c7cdd5;margin-bottom:11px;width:100%;padding:0}
@@ -109,6 +103,8 @@ fieldset:disabled{opacity:.5}
 .button-cashout{width:100%;min-height:45px;border:1px solid #dcd39b80;border-radius:7px;background:#d6c57515;color:#ede1ab;font-size:14px;font-weight:600;padding:8px}
 .button-cashout span{font-family:Consolas,monospace;margin-left:9px}
 .button-cashout:hover:not(:disabled){background:#d6c5752b}
+.button-cashout,.bet-shortcuts button,.difficulty-options button{transition:background .12s,border-color .12s,opacity .12s,transform .08s}
+.button-cashout:active:not(:disabled),.bet-shortcuts button:active:not(:disabled),.difficulty-options button:active:not(:disabled){transform:translateY(1px)}
 .button-cashout:disabled{opacity:.4}
 .action-caption{font-size:12px;text-align:center;color:#a2adbc;line-height:1.4;margin-top:2px}
 .status-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 26px;border-top:1px solid var(--line);color:#a5b0c1;font-size:12px;line-height:1.5}
@@ -154,9 +150,9 @@ fieldset:disabled{opacity:.5}
 .dialog-footnote{font-size:12px;color:#93a2b5;line-height:1.6;margin-top:22px}
 @media(min-width:1600px){#app{max-width:1450px}.stage{height:560px}}
 @media(max-width:1000px){#app{padding:0 22px 15px}.topbar{min-height:95px}.game-controls{gap:18px;grid-template-columns:1fr 1fr 1.15fr;padding:20px}.bet-shortcuts button{min-width:27px;padding:0 5px}.difficulty-options button{font-size:12px;padding:0 5px}.hud{left:27px;top:95px}.next-signal{top:100px;right:22px}.next-signal .eyebrow{font-size:12px}.route-step{min-width:80px}.route-area{padding:0 20px 18px}.history{grid-template-columns:repeat(3,minmax(0,1fr))}.status-bar{padding:12px 20px}}
-@media(max-width:720px){#app{padding:0 12px 15px}.topbar{min-height:85px;gap:15px}.brand{font-size:24px;gap:7px}.brand-sub{font-size:12px;letter-spacing:2.7px}.brand-mark{width:25px;height:36px}.demo-tag{font-size:12px;padding:5px;letter-spacing:.4px}.demo-tag span{display:none}.wallet-label{font-size:12px}.wallet-value{gap:5px;font-size:12px}.wallet-value strong{font-size:20px}.wallet-value svg{width:17px;height:17px}.game-board{border-radius:14px}.stage{height:400px}.stage-topline{top:16px;left:17px;right:15px}.location-label{font-size:12px;letter-spacing:1px;gap:6px}.icon-button{width:30px;height:30px;font-size:16px}.hud{top:73px;left:20px;max-width:52%}.eyebrow{font-size:12px;letter-spacing:1.2px}.multiplier{font-size:67px;margin-bottom:10px}.potential-label{font-size:12px}.potential-value{font-size:18px}.next-signal{top:78px;right:18px;gap:4px}.next-signal strong{font-size:25px}.chance-label{font-size:12px}.next-signal .eyebrow{font-size:12px;letter-spacing:.8px}.bonus-pill{font-size:12px;padding:5px;margin-top:10px}.street-caption{font-size:12px;left:19px;bottom:18px;letter-spacing:1.6px}.countdown{top:59%;left:57%;padding:12px 18px;min-width:135px}.countdown strong{font-size:36px}.countdown>span{font-size:12px}.result-banner{top:60%;width:76%;padding:17px}.result-banner strong{font-size:32px}.result-banner>span:last-child{font-size:12px}.route-area{padding:0 15px 16px}.route-header{font-size:12px;letter-spacing:.6px;gap:10px}.route-header strong{font-size:12px;margin-left:7px}.route-header>span:last-child{font-size:12px}.route-step{min-width:80px;padding:9px 5px}.game-controls{grid-template-columns:1fr 1fr;padding:17px 15px;gap:4px 15px}.action-controls{grid-column:1/-1;padding-top:6px;display:grid;grid-template-columns:1fr}.action-controls:has(.button-cashout:not([hidden])){grid-template-columns:1fr 1fr}.action-caption{grid-column:1/-1;margin-top:2px;font-size:12px}.button-primary{height:51px;font-size:14px;gap:9px}.button-cashout{font-size:13px;padding:6px}.button-cashout span{margin-left:4px}.bet-input-row{height:49px}.difficulty-options{height:49px}.control-hint{font-size:12px}.bet-input-row input{font-size:18px;padding:6px 4px}.bet-shortcuts button{font-size:12px;min-width:25px;padding:0 5px}.bet-error{font-size:12px;min-height:15px;margin-top:7px}legend{font-size:12px;margin-bottom:9px}.status-bar{padding:11px 15px;gap:9px;flex-wrap:wrap;font-size:12px}.status-bar button{font-size:12px}.history-section{margin-top:20px}.section-heading{margin-bottom:11px}.section-heading h2{font-size:14px}.section-heading button{font-size:12px}.history{grid-template-columns:repeat(2,minmax(0,1fr))}.history-card{padding:12px;gap:8px}.history-detail{font-size:12px}.history-empty{font-size:12px}.history-empty span{font-size:12px}.footer{font-size:12px;letter-spacing:.6px;margin-top:20px;gap:10px}.footer-separator{margin:0 5px}.rules-dialog{padding:20px}.rules-dialog h2{font-size:28px}.rules-list{font-size:13px}.math-note{font-size:12px;padding:13px}}
+@media(max-width:720px){#app{padding:0 12px 15px}.topbar{min-height:85px;gap:15px}.brand{font-size:24px;gap:7px}.brand-sub{font-size:12px;letter-spacing:2.7px}.brand-mark{width:25px;height:36px}.demo-tag{font-size:12px;padding:5px;letter-spacing:.4px}.demo-tag span{display:none}.wallet-label{font-size:12px}.wallet-value{gap:5px;font-size:12px}.wallet-value strong{font-size:20px}.wallet-value svg{width:17px;height:17px}.game-board{border-radius:14px}.stage{height:400px}.stage-topline{top:16px;left:17px;right:15px}.location-label{font-size:12px;letter-spacing:1px;gap:6px}.icon-button{width:30px;height:30px;font-size:16px}.hud{top:73px;left:20px;max-width:52%}.eyebrow{font-size:12px;letter-spacing:1.2px}.multiplier{font-size:67px;margin-bottom:10px}.potential-label{font-size:12px}.potential-value{font-size:18px}.next-signal{top:78px;right:18px;gap:4px}.next-signal strong{font-size:25px}.chance-label{font-size:12px}.next-signal .eyebrow{font-size:12px;letter-spacing:.8px}.street-caption{font-size:12px;left:19px;bottom:18px;letter-spacing:1.6px}.result-banner{top:60%;width:76%;padding:17px}.result-banner strong{font-size:32px}.result-banner>span:last-child{font-size:12px}.route-area{padding:0 15px 16px}.route-header{font-size:12px;letter-spacing:.6px;gap:10px}.route-header strong{font-size:12px;margin-left:7px}.route-step{min-width:80px;padding:9px 5px}.game-controls{grid-template-columns:1fr 1fr;padding:17px 15px;gap:4px 15px}.action-controls{grid-column:1/-1;padding-top:6px;display:grid;grid-template-columns:1fr}.action-controls:has(.button-cashout:not([hidden])){grid-template-columns:1fr 1fr}.action-caption{grid-column:1/-1;margin-top:2px;font-size:12px}.button-primary{height:51px;font-size:14px;gap:9px}.button-cashout{font-size:13px;padding:6px}.button-cashout span{margin-left:4px}.bet-input-row{height:49px}.difficulty-options{height:49px}.control-hint{font-size:12px}.bet-input-row input{font-size:18px;padding:6px 4px}.bet-shortcuts button{font-size:12px;min-width:25px;padding:0 5px}.bet-error{font-size:12px;min-height:15px;margin-top:7px}legend{font-size:12px;margin-bottom:9px}.status-bar{padding:11px 15px;gap:9px;flex-wrap:wrap;font-size:12px}.status-bar button{font-size:12px}.history-section{margin-top:20px}.section-heading{margin-bottom:11px}.section-heading h2{font-size:14px}.section-heading button{font-size:12px}.history{grid-template-columns:repeat(2,minmax(0,1fr))}.history-card{padding:12px;gap:8px}.history-detail{font-size:12px}.history-empty{font-size:12px}.history-empty span{font-size:12px}.footer{font-size:12px;letter-spacing:.6px;margin-top:20px;gap:10px}.footer-separator{margin:0 5px}.rules-dialog{padding:20px}.rules-dialog h2{font-size:28px}.rules-list{font-size:13px}.math-note{font-size:12px;padding:13px}}
 @media(max-width:375px){.topbar{gap:10px}.wallet-value strong{font-size:18px}.game-controls{gap:3px 10px}.bet-shortcuts button{min-width:22px;padding:0 3px}.difficulty-options button{font-size:12px;padding:0 3px}.demo-tag{font-size:12px}.multiplier{font-size:58px}.next-signal .eyebrow{font-size:12px}.chance-label{font-size:12px}.stage{height:375px}}
-@media(orientation:landscape) and (max-height:550px){#app{padding:0 15px 10px}.topbar{min-height:63px}.brand{font-size:22px}.brand-mark{height:34px;width:25px}.wallet-label{font-size:12px}.wallet-value strong{font-size:20px}.stage{height:285px}.hud{top:64px;left:24px}.multiplier{font-size:64px}.stage-topline{top:12px}.next-signal{top:66px}.game-controls{grid-template-columns:1fr 1fr 1.15fr;gap:16px;padding:15px 20px}.action-controls{grid-column:auto;padding-top:24px;display:flex}.route-area{padding-bottom:12px}.route-header{margin-bottom:10px}.route-step{padding:7px 5px;gap:5px}.result-banner{top:48%;padding:15px}.countdown{top:53%}.bonus-pill{margin-top:8px}}
+@media(orientation:landscape) and (max-height:550px){#app{padding:0 15px 10px}.topbar{min-height:63px}.brand{font-size:22px}.brand-mark{height:34px;width:25px}.wallet-label{font-size:12px}.wallet-value strong{font-size:20px}.stage{height:285px}.hud{top:64px;left:24px}.multiplier{font-size:64px}.stage-topline{top:12px}.next-signal{top:66px}.game-controls{grid-template-columns:1fr 1fr 1.15fr;gap:16px;padding:15px 20px}.action-controls{grid-column:auto;padding-top:24px;display:flex}.route-area{padding-bottom:12px}.route-header{margin-bottom:10px}.route-step{padding:7px 5px;gap:5px}.result-banner{top:48%;padding:15px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* Keep controls readable, with fluid layout when text is enlarged. */
@@ -166,10 +162,18 @@ fieldset:disabled{opacity:.5}
 .control-hint{line-height:1.5}
 .history-detail{line-height:1.5}
 .footer{font-size:12px;letter-spacing:.4px}
-@media(max-width:720px){.demo-tag{display:none}.brand-sub{font-size:9px}.wallet-label{font-size:11px}.topbar{gap:12px}.eyebrow{font-size:11px;letter-spacing:.7px}.location-label{font-size:11px}.next-signal .eyebrow{font-size:11px}.next-signal{max-width:43%;top:78px}.chance-label{font-size:11px}.hud{max-width:50%}.potential-label{font-size:12px}.bonus-pill{font-size:10px}.route-header>span:last-child{font-size:12px}.history{grid-template-columns:repeat(2,minmax(0,1fr))}.history-card{grid-template-columns:1fr}.history-amount{text-align:left}.difficulty-options button{font-size:12px}.bet-shortcuts button{font-size:12px}.button-primary{font-size:14px}.status-bar{font-size:12px}.footer{font-size:11px}.action-caption{font-size:12px}.bet-error{font-size:12px}}
+@media(max-width:720px){.demo-tag{display:none}.brand-sub{font-size:9px}.wallet-label{font-size:11px}.topbar{gap:12px}.eyebrow{font-size:11px;letter-spacing:.7px}.location-label{font-size:11px}.next-signal .eyebrow{font-size:11px}.next-signal{max-width:43%;top:78px}.chance-label{font-size:11px}.hud{max-width:50%}.potential-label{font-size:12px}.history{grid-template-columns:repeat(2,minmax(0,1fr))}.history-card{grid-template-columns:1fr}.history-amount{text-align:left}.difficulty-options button{font-size:12px}.bet-shortcuts button{font-size:12px}.button-primary{font-size:14px}.status-bar{font-size:12px}.footer{font-size:11px}.action-caption{font-size:12px}.bet-error{font-size:12px}}
 @media(max-width:375px){.bet-input-row{height:auto;min-height:49px;flex-wrap:wrap}.bet-input-row input{width:100%}.bet-shortcuts{width:100%}.bet-shortcuts button{flex:1;min-height:34px}.difficulty-options{height:auto;min-height:49px;flex-wrap:wrap}.difficulty-options button{min-height:39px;flex:1 1 40%}.next-signal .eyebrow{font-size:10px}.multiplier{font-size:55px}}
 @media(orientation:landscape) and (max-height:550px){.next-signal{top:66px}}
 
 .street-caption{max-width:calc(100% - 48px)}
 .street-caption-line{flex-shrink:0}
 #street-caption{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* Compact wordmark and a result card that leaves the police ring visible. */
+.brand-name{font-size:clamp(18px,2.2vw,28px);letter-spacing:-.6px;white-space:nowrap}
+.result-banner.lost{top:auto;bottom:15px;transform:translateX(-50%);padding:12px 18px;gap:5px;width:min(360px,70%)}
+.result-banner.lost strong{font-size:30px}
+.stage:has(.result-banner.lost:not([hidden])) .street-caption{visibility:hidden}
+@media(max-width:720px){.brand{gap:6px}.brand-name{font-size:20px}.result-banner.lost{bottom:12px;width:82%;padding:10px 14px}.result-banner.lost strong{font-size:25px}}
+@media(max-width:375px){.brand-name{font-size:18px}.brand-mark{width:21px}}

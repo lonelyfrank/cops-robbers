@@ -8,6 +8,8 @@ export const RUNNER_Z = MAIN_ROAD_Z + 1.25;
 export const ROAD_Y = -.03;
 export const STOP_DISTANCE = 4.7;
 export const getCrossingX = n => (n - 1) * TILE_SIZE;
+// The patrol waits before the previous zebra crossing, one district behind.
+export const getPursuitStopX = completed => getCrossingX(completed) - 6.7;
 
 // A green crosses this junction and carries the runner to the next safe stop.
 // At the final junction, stop within the last playable tile for extraction.
@@ -23,7 +25,7 @@ export function getCurrentTile(x) {
 
 export function getTileWindow(current) {
   if (!Number.isInteger(current) || current < 1 || current > MAX_CROSSINGS) throw new RangeError('Modulo non valido.');
-  // 0 is the approach district; MAX+1 is the dark exit district, never a wager.
+  // 0 is the approach district; MAX+1 is the exit district, never a wager.
   return [current - 1, current, current + 1];
 }
 

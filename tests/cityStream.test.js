@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CityStream } from '../src/cityStream.js';
-import { createCityTile } from '../src/cityTile.js';
+import { createCityTile, getDistrictStyle } from '../src/cityTile.js';
 import { CharacterController } from '../src/characterController.js';
 import { unitBox } from '../src/voxelModels.js';
+import { getCityLightLevel } from '../src/cityEffects.js';
 import { MAX_CROSSINGS } from '../src/gameMath.js';
 import { getCurrentTile, getTileWindow, getCrossingX, getStopX, TILE_SIZE, sirenPulse } from '../src/mapLayout.js';
 
@@ -21,30 +22,31 @@ test('Road connectors meet, each successful crossing reaches the next tile, and 
   assert.deepEqual(getTileWindow(MAX_CROSSINGS),[MAX_CROSSINGS-1,MAX_CROSSINGS,MAX_CROSSINGS+1]);
 });
 
-test('The initial previous/current/next districts exist and only the occupied tile has warm lights',()=>{
+test('Adjacent districts have soft lighting and the occupied district remains highlighted',()=>{
   const scene=new THREE.Scene(),stream=new CityStream(scene);
   assert.deepEqual(loaded(stream),[0,1,2]);
   for(const [n,{tile}] of stream.tiles) {
     assert.equal(tile.root.parent,scene);
-    assert.equal(tile.records.get('window').material.emissiveIntensity>0,n===1);
-    assert.equal(tile.records.get('lantern').material.emissiveIntensity>0,n===1);
+    assert.ok(tile.records.get('window').material.emissiveIntensity>0);
+    if(n!==1) assert.ok(tile.warmth<stream.activeTile.warmth);
+    assert.ok(tile.records.get('lantern').material.emissiveIntensity>0);
+    assert.equal(tile.signal,'red'); assert.equal(tile.crossSignal,'green');
   }
   assert.equal(stream.previousTile.role,'previous');assert.equal(stream.tiles.get(2).tile.role,'next');
   stream.dispose();
 });
 
-test('Future windows, lamps and signal stay dark until physical entry, then the same tile wakes up',()=>{
+test('Lighting remains continuous when the occupied district changes at a connector',()=>{
   const stream=new CityStream(new THREE.Scene());
-  const future=stream.tiles.get(2).tile;
-  stream.setSignal(2,'yellow');stream.setPlayerX(TILE_SIZE/2-.001);settle(stream);
-  assert.equal(stream.current,1);assert.equal(future.warmth,0);
-  assert.equal(future.signals[0].lamps.yellow.material.emissiveIntensity,0);
-  stream.setPlayerX(TILE_SIZE/2);stream.update(.1);
-  assert.equal(stream.current,2);assert.equal(stream.activeTile,future);
-  assert.ok(future.warmth>0);assert.ok(future.records.get('window').material.emissiveIntensity>0);
-  assert.ok(future.signals[0].lamps.yellow.material.emissiveIntensity>0);
-  assert.equal(stream.previousTile.warmth,0);
-  assert.equal(stream.previousTile.records.get('window').material.emissiveIntensity,0);
+  stream.setPlayerX(TILE_SIZE/2-.001);settle(stream);
+  const before=[stream.activeTile.warmth,stream.tiles.get(2).tile.warmth];
+  stream.setPlayerX(TILE_SIZE/2+.001);
+  assert.equal(stream.current,2);
+  assert.ok(Math.abs(stream.previousTile.warmth-before[0])<.0001);
+  assert.ok(Math.abs(stream.activeTile.warmth-before[1])<.0001);
+  stream.setPlayerX(getStopX(1));settle(stream);
+  assert.ok(stream.activeTile.warmth>stream.previousTile.warmth);
+  assert.equal(stream.activeTile.lighting,stream.previousTile.lighting);
   stream.dispose();
 });
 
@@ -58,7 +60,7 @@ test('A district appears below the map and the obsolete one dissolves, releasing
   assert.deepEqual(loaded(stream),[0,1,2,3]);
   assert.equal(retired.role,'retiring');assert.ok(stream.tiles.get(3).tile.root.position.y<0);
   assert.equal(stream.tiles.get(3).reveal,0);
-  stream.update(.2);assert.ok(retired.reveal<1);assert.ok(stream.tiles.get(3).reveal>0);
+  stream.update(.2);assert.ok(retired.emerging.some(item=>item.growth<1));assert.equal(retired.root.position.y,0);assert.ok(stream.tiles.get(3).reveal>0);
   settle(stream);
   assert.deepEqual(loaded(stream),[1,2,3]);assert.equal(retired.disposed,true);assert.equal(retired.root.parent,null);
   assert.equal(materialsDisposed,retired.records.size);assert.equal(sharedGeometryDisposed,0);
@@ -77,15 +79,16 @@ test('Rapid jumps, complete traversal and repeated resets never keep more than f
   stream.dispose();assert.equal(scene.children.length,0);assert.equal(stream.tiles.size,0);
 });
 
-test('Capture extinguishes the occupied district and reset clears the arrest and signal history',()=>{
+test('Capture dims the warm light, stops cross traffic and reset restores waiting at red',()=>{
   const stream=new CityStream(new THREE.Scene());
   stream.setPlayerX(getCrossingX(3));settle(stream);assert.ok(stream.activeTile.warmth>.99);
-  stream.setSignal(3,'red');stream.setCaught(true);stream.update(.05);
-  assert.equal(stream.activeTile.warmth,0);
-  assert.equal(stream.activeTile.records.get('lantern').material.emissiveIntensity,0);
+  stream.setSignal(3,'red');stream.setCaught(true);settle(stream);
+  assert.ok(stream.activeTile.warmth<.2);
+  assert.equal(stream.activeTile.crossSignal,'red');
+  assert.ok(stream.activeTile.records.get('lantern').material.emissiveIntensity>0);
   assert.ok(stream.activeTile.signals[0].lamps.red.material.emissiveIntensity>0);
   stream.reset();assert.equal(stream.caught,false);assert.equal(stream.current,1);
-  assert.equal(stream.signals.size,1);assert.equal(stream.activeTile.signal,'yellow');
+  assert.equal(stream.signals.size,1);assert.equal(stream.activeTile.signal,'red');
   assert.equal(stream.activeTile.warmth,1);stream.dispose();
 });
 
@@ -124,11 +127,70 @@ test('Diorama batches keep finite transforms, independent per-tile materials and
   const a=createCityTile(2),b=createCityTile(2);
   a.setRole('current');a.update(.1,1);b.setRole('next');b.update(.1,1);
   assert.notEqual(a.records.get('window').material,b.records.get('window').material);
-  assert.equal(b.records.get('window').material.emissiveIntensity,0);
+  assert.ok(b.records.get('window').material.emissiveIntensity>0);
+  assert.equal(b.warmth,a.warmth);assert.equal(b.records.get('window').material.emissiveIntensity,a.records.get('window').material.emissiveIntensity);
   a.root.updateMatrixWorld(true);a.root.traverse(object=>{
     assert.ok(object.matrixWorld.elements.every(Number.isFinite));
     if(object.isInstancedMesh)assert.ok(object.instanceMatrix.array.every(Number.isFinite));
   });
-  const matrices=tile=>tile.root.children.filter(object=>object.isInstancedMesh).map(mesh=>Array.from(mesh.instanceMatrix.array));
+  const matrices=tile=>{const result=[];tile.root.traverse(mesh=>{if(mesh.isInstancedMesh)result.push(Array.from(mesh.instanceMatrix.array));});return result;};
   assert.deepEqual(matrices(a),matrices(b));a.dispose();b.dispose();
+});
+
+
+test('District architecture varies reproducibly without blocking the road parcels',()=>{
+  for(let index=0;index<=MAX_CROSSINGS;index++) {
+    const style=getDistrictStyle(index);
+    assert.deepEqual(style,getDistrictStyle(index));
+    assert.notDeepEqual(style,getDistrictStyle(index+1));
+    for(const building of style.buildings) {
+      assert.ok(Math.abs(building.x)-building.width/2>3.3);
+      assert.ok(building.floors>=1&&building.floors<=4);
+    }
+  }
+});
+
+test('Runner and patrol junctions open together; the next waiting junction stays red',()=>{
+  const stream=new CityStream(new THREE.Scene(),{reducedMotion:true});
+  stream.setMovement(1);stream.update(0);
+  for(const n of [0,1]) {
+    assert.equal(stream.tiles.get(n).tile.signal,'green');
+    assert.equal(stream.tiles.get(n).tile.crossSignal,'red');
+  }
+  stream.setPlayerX(getStopX(1));
+  assert.equal(stream.current,2);assert.equal(stream.activeTile.signal,'red');
+  assert.equal(stream.activeTile.crossSignal,'green');
+  stream.setMovement(null);stream.update(0);
+  assert.equal(stream.previousTile.signal,'red');assert.equal(stream.previousTile.crossSignal,'green');
+  stream.dispose();
+});
+
+
+test('The spatial light gradient is symmetric and has no seam at district edges',()=>{
+  assert.equal(getCityLightLevel(0),1);
+  for(let x=1;x<=78;x++) {
+    assert.equal(getCityLightLevel(x),getCityLightLevel(-x));
+    assert.ok(getCityLightLevel(x)<getCityLightLevel(x-1));
+  }
+  for(const edge of [-39,-13,13,39]) assert.ok(Math.abs(getCityLightLevel(edge-.001)-getCityLightLevel(edge+.001))<.001);
+});
+
+test('Buildings emerge after the base arrives and retract before the base drops',()=>{
+  const tile=createCityTile(2);
+  tile.update(0,.2);
+  assert.ok(tile.root.position.y<0);assert.ok(tile.emerging.every(item=>!item.root.visible));
+  tile.update(0,.65);
+  assert.equal(tile.root.position.y,0);
+  assert.ok(tile.emerging.every(item=>item.growth>0&&item.growth<1));
+  const building=tile.emerging[0].root;
+  tile.root.updateMatrixWorld(true);
+  const partial=new THREE.Box3().setFromObject(building);
+  assert.ok(Math.abs(partial.min.y-.25)<.01);
+  tile.update(0,1);tile.root.updateMatrixWorld(true);
+  const full=new THREE.Box3().setFromObject(building);
+  assert.ok(full.max.y>partial.max.y);
+  tile.update(0,.4);assert.equal(tile.root.position.y,0);
+  tile.update(0,.3);assert.ok(tile.root.position.y<0);assert.ok(tile.emerging.every(item=>!item.root.visible));
+  tile.update(0,0,{reducedMotion:true});assert.equal(tile.root.position.y,0);assert.ok(tile.emerging.every(item=>item.growth===1));
+  tile.dispose();
 });

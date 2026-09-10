@@ -20,17 +20,16 @@ function synchronizeScene(s) {
     characters.reset(); sceneManager.reset();
   }
   if (s.phase !== previousPhase || s.round !== previousRound) {
-    if (s.phase === PHASES.COUNTDOWN) sceneManager.setSignal(s.crossing + 1, 'yellow');
-    else if (s.phase === PHASES.RUNNING) {
-      sceneManager.setSignal(s.crossing + 1, 'green');
+    if (s.phase === PHASES.RUNNING) {
       characters.run(s.crossing + 1, () => game.finishCrossing());
     } else if (s.phase === PHASES.CAUGHT) {
-      sceneManager.setSignal(s.crossing + 1, 'red');
       characters.caught(s.crossing + 1, () => game.finishCaught());
     } else if (s.phase === PHASES.ESCAPING) {
-      characters.escape(s.crossing, () => game.finishEscape());
+      characters.escape(() => game.finishEscape());
     }
   }
+  characters.setLoot(s.multiplier, s.crossing);
+  sceneManager.setMovement(s.phase === PHASES.RUNNING ? s.crossing + 1 : null);
   sceneManager.setPhase(s.phase);
   sceneManager.setCrossingTarget(s);
   previousPhase = s.phase; previousRound = s.round;
@@ -50,12 +49,11 @@ try {
   const frame = now => {
     if (failed) return;
     try {
-      // Hidden tabs never resolve a signal or advance an animation behind the player.
+      // Hidden tabs never advance an animation behind the player.
       const dt = document.hidden ? 0 : Math.min((now - lastTime) / 1000, .05);
       lastTime = now;
       if (!document.hidden) {
         elapsed += dt;
-        game.elapseCountdown(dt * 1000);
         characters.update(dt);
         const s = game.snapshot;
         sceneManager.follow(s.phase === PHASES.RUNNING ? characters.thief.root.position.x : getStopX(s.crossing));

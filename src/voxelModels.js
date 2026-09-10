@@ -29,9 +29,12 @@ export function createThief() {
   box(body, [.047, .058, .115], [.323, 1.81, -.14], 0xf4f3d4);
   box(body, [.047, .058, .115], [.323, 1.81, .14], 0xf4f3d4);
   box(body, [.045, .044, .12], [.29, 1.61, .05], 0x472f2d);
-  box(body, [.42, .6, .48], [-.44, 1.26, .04], 0x9d8250);
-  box(body, [.15, .16, .16], [-.48, 1.64, .04], 0xc9af75);
-  box(body, [.12, .24, .07], [-.664, 1.27, .12], 0xe5ce8f);
+  const lootBag = new THREE.Group(); lootBag.name = 'loot-bag';
+  // Anchor at the shoulder: growth extends backwards, away from the face.
+  lootBag.position.set(-.23, 1, .04); body.add(lootBag);
+  box(lootBag, [.42, .6, .48], [-.21, .26, 0], 0x9d8250);
+  box(lootBag, [.15, .16, .16], [-.25, .64, 0], 0xc9af75);
+  box(lootBag, [.12, .24, .07], [-.434, .27, .08], 0xe5ce8f);
   const legs = [], arms = [];
   for (const side of [-1, 1]) {
     const leg = new THREE.Group(); leg.position.set(0, .84, side * .19); body.add(leg);
@@ -44,11 +47,29 @@ export function createThief() {
     box(arm, [.23, .23, .23], [.03, -.45, 0], 0xc8996d);
     arms.push(arm);
   }
-  return { root, body, legs, arms };
+  return { root, body, legs, arms, lootBag };
+}
+
+/** Small civilian cars, batched by paint; no additional real-time lights. */
+export function createTrafficCar(color, taxi = false, getMaterial = material) {
+  const root = new THREE.Group(); root.name = taxi ? 'city-taxi' : 'city-car';
+  const batch = new VoxelBatch();
+  batch.add(color, [1.45, .47, 2.9], [0, .65, 0]);
+  batch.add(0x202a39, [1.51, .13, 3.02], [0, .4, 0]);
+  batch.add(0x517184, [1.26, .49, 1.43], [0, 1.08, -.12]);
+  batch.add(color, [1.32, .12, 1.22], [0, 1.35, -.21]);
+  for (const side of [-1, 1]) {
+    batch.add(0xf0dfab, [.39, .15, .07], [side * .46, .72, 1.47]);
+    batch.add(0xbb4a4f, [.31, .13, .07], [side * .47, .65, -1.47]);
+    for (const z of [-.91, .91]) batch.add(0x121c29, [.17, .49, .5], [side * .75, .35, z]);
+  }
+  if (taxi) batch.add(0xf9e5a8, [.56, .19, .34], [0, 1.49, -.12]);
+  batch.build(root, getMaterial);
+  return { root };
 }
 
 /** +Z is the front of the car. Beacons use colored light, not emissive materials. */
-export function createPoliceCar() {
+export function createPoliceCar({lights=true}={}) {
   const root = new THREE.Group(); root.name = 'police-car';
   box(root, [1.75, .52, 3.15], [0, .72, 0], 0xd2dbe3);
   box(root, [1.83, .13, 3.35], [0, .45, 0], 0x162030);
@@ -68,37 +89,12 @@ export function createPoliceCar() {
   }
   box(root, [1.23, .08, .34], [0, 1.66, -.14], 0x152034);
   const blue = box(root, [.48, .18, .3], [-.33, 1.78, -.14], 0x557df9);
+  blue.material.emissive.set(0x315fdf);blue.material.emissiveIntensity=.75;
   const red = box(root, [.48, .18, .3], [.33, 1.78, -.14], 0xf14d65);
   const blueLight = new THREE.PointLight(0x467bff, 0, 11, 2); blueLight.position.set(-.6, 2.05, 0);
   const redLight = new THREE.PointLight(0xff385a, 0, 11, 2); redLight.position.set(.6, 2.05, 0);
-  root.add(blueLight, redLight);
+  if(lights) root.add(blueLight, redLight);
   return { root, blue, red, blueLight, redLight };
-}
-
-export function createHelicopter() {
-  const root = new THREE.Group(); root.name = 'getaway-helicopter';
-  box(root, [1.6, 1.27, 2.9], [0, .38, 0], 0x566854);
-  box(root, [1.37, .91, 1.28], [0, .38, 1.67], 0x3c5866);
-  box(root, [.12, 1.02, 1.22], [0, .4, 1.76], 0x7a8c63);
-  box(root, [1.67, .16, 2.05], [0, 1.05, .25], 0x809369);
-  box(root, [.39, .43, 3.48], [0, .45, -2.62], 0x6b805c);
-  box(root, [.24, 1.25, .67], [0, .95, -4.13], 0xa6bb70);
-  box(root, [1.65, .14, .54], [0, .61, -3.68], 0x95a96a);
-  for (const side of [-1, 1]) {
-    box(root, [.13, .57, .13], [side * 1.01, -.57, .83], 0xa1adb1);
-    box(root, [.13, .57, .13], [side * 1.01, -.57, -.81], 0xa1adb1);
-    box(root, [.18, .17, 3.76], [side * 1.01, -.9, .22], 0x7d8c92);
-  }
-  box(root, [.2, .53, .2], [0, 1.36, -.13], 0x17232c);
-  const rotor = new THREE.Group(); rotor.position.set(0, 1.65, -.13); root.add(rotor);
-  box(rotor, [7.8, .06, .27], [0, 0, 0], 0x1b2933);
-  box(rotor, [.27, .06, 7.8], [0, 0, 0], 0x1b2933);
-  box(rotor, [.37, .16, .37], [0, .03, 0], 0xa8b69b);
-  const tailRotor = new THREE.Group(); tailRotor.position.set(.22, .85, -4.18); root.add(tailRotor);
-  box(tailRotor, [.055, 1.4, .14], [0, 0, 0], 0x24343c);
-  box(tailRotor, [.055, .14, 1.4], [0, 0, 0], 0x24343c);
-  const rope = box(root, [.06, 1, .06], [.97, -1.5, 0], 0xd1be86);
-  return { root, rotor, tailRotor, rope };
 }
 
 /** Bake decorative boxes into color batches. Only the scene owner disposes them. */

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RTP_TARGET, DIFFICULTIES, MAX_CROSSINGS, HELICOPTER_THRESHOLD, HELICOPTER_BONUS, getGreenProbability, getCumulativeProbability, getMultiplier, getPayoutBreakdown, calculatePayout, isGreen, buildRiskTable } from '../src/gameMath.js';
+import { RTP_TARGET, DIFFICULTIES, MAX_CROSSINGS, getGreenProbability, getCumulativeProbability, getMultiplier, calculatePayout, isGreen, buildRiskTable } from '../src/gameMath.js';
 
 const close = (a, b, epsilon = 1e-12) => assert.ok(Math.abs(a - b) <= epsilon, `${a} differs from ${b}`);
 
@@ -20,13 +20,14 @@ test('Actual payable multiplier gives 96% RTP at all 36 difficulty / crossing co
   }
 });
 
-test('Helicopter bonus is genuinely 8% of base and is included exactly once in total RTP', () => {
-  for (const difficulty of Object.keys(DIFFICULTIES)) for (let n = 1; n <= MAX_CROSSINGS; n++) {
-    const b = getPayoutBreakdown(n, difficulty);
-    close(b.bonusRate, n >= HELICOPTER_THRESHOLD ? HELICOPTER_BONUS : 0);
-    close(b.baseMultiplier * (1 + b.bonusRate), b.totalMultiplier, 1e-9);
-    close(b.baseMultiplier + b.bonusMultiplier, b.totalMultiplier, 1e-9);
-    close(getCumulativeProbability(n, difficulty) * b.totalMultiplier, RTP_TARGET);
+test('Risk table matches actual cashout amounts across all crossings and difficulties', () => {
+  for (const difficulty of Object.keys(DIFFICULTIES)) {
+    const rows=buildRiskTable(difficulty);
+    assert.equal(rows.length,MAX_CROSSINGS);
+    for (const row of rows) {
+      close(row.totalMultiplier,getMultiplier(row.n,difficulty));
+      assert.equal(calculatePayout(2500,row.n,difficulty),Math.floor(2500*row.totalMultiplier+1e-8));
+    }
   }
 });
 

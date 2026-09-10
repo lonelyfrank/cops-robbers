@@ -3,8 +3,7 @@ import { MAX_CROSSINGS, getMultiplier } from './gameMath.js';
 import { formatMultiplier } from './ui.js';
 import { CityStream } from './cityStream.js';
 import { disposeTileSharedAssets } from './cityTile.js';
-import { createPoliceCar } from './voxelModels.js';
-import { getCrossingX, getStopX, MAIN_ROAD_Z, RUNNER_Z, sirenPulse } from './mapLayout.js';
+import { getCrossingX, getStopX, MAIN_ROAD_Z, sirenPulse } from './mapLayout.js';
 
 export { CROSSING_SPACING, getCrossingX, getStopX } from './mapLayout.js';
 
@@ -19,19 +18,17 @@ export function createSceneManager(canvas,container) {
   scene.fog=new THREE.FogExp2(0x06132c,.0065);
   const camera=new THREE.OrthographicCamera(-40,40,20,-20,.1,190);
   const focus=new THREE.Vector3(0,1.1,1.1),cameraOffset=new THREE.Vector3(-29,33,37);
-  // Dim sky gives the future districts silhouettes, without illuminating windows.
-  scene.add(new THREE.HemisphereLight(0x779edc,0x161e36,.36));
-  const rim=new THREE.DirectionalLight(0x809edb,.2);rim.position.set(4,18,-12);scene.add(rim);
+  // Cool ambient light keeps adjacent streets readable; the warm key marks the active district.
+  scene.add(new THREE.HemisphereLight(0x779edc,0x161e36,.56));
+  const rim=new THREE.DirectionalLight(0x809edb,.3);rim.position.set(4,18,-12);scene.add(rim);
   // One warm key for the occupied tile. All other lights are fixed, reused pools.
-  const key=new THREE.SpotLight(0xffd5a5,1950,48,.66,.74,2);
-  key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.near=2;key.shadow.camera.far=55;
+  const key=new THREE.SpotLight(0xffd5a5,1950,65,.9,1,2);
+  key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.near=2;key.shadow.camera.far=70;
   key.shadow.normalBias=.055;key.shadow.bias=-.00008;scene.add(key,key.target);
   const warmLights=Array.from({length:4},()=>{const light=new THREE.PointLight(0xffb458,0,11,2);scene.add(light);return light;});
   const signalLight=new THREE.PointLight(0xffba39,0,9,2);scene.add(signalLight);
   const captureLights=Array.from({length:2},()=>{const light=new THREE.PointLight(0x286bff,0,23,2);scene.add(light);return light;});
   const stream=new CityStream(scene,{reducedMotion});
-  const chase=createPoliceCar();chase.root.name='pursuit-car';chase.root.rotation.y=Math.PI/2;scene.add(chase.root);
-  chase.blueLight.distance=21;chase.redLight.distance=21;
   const indicator=new THREE.Mesh(new THREE.RingGeometry(.67,.79,4),new THREE.MeshBasicMaterial({color:0xd6efae,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));
   indicator.rotation.x=-Math.PI/2;indicator.rotation.z=Math.PI/4;scene.add(indicator);
   // A road marking between the four crosswalks, with normal scene occlusion.
@@ -41,7 +38,6 @@ export function createSceneManager(canvas,container) {
   const roadMultiplier=new THREE.Mesh(new THREE.PlaneGeometry(5.2,2.6),new THREE.MeshBasicMaterial({map:multiplierTexture,transparent:true,depthWrite:false,toneMapped:false}));
   roadMultiplier.name='road-multiplier';roadMultiplier.rotation.x=-Math.PI/2;roadMultiplier.visible=false;scene.add(roadMultiplier);
   const flash=document.getElementById('police-flash'),streetCaption=document.getElementById('street-caption');
-  const chasePosition=new THREE.Vector3();
   let targetCrossing=1,multiplierText='';
   let width=1,height=1,followX=getStopX(0),thief=null,phase='idle',lastCaption='',captureTime=0;
   function resize() {
@@ -54,13 +50,12 @@ export function createSceneManager(canvas,container) {
   function setPhase(value) {
     if(value==='caught'&&phase!=='caught')captureTime=0;
     phase=value;
-    if(['idle','countdown','running','ready','escaping'].includes(value))stream.setCaught(false);
+    if(['idle','running','ready','escaping'].includes(value))stream.setCaught(false);
     else if(value==='caught')stream.setCaught(true);
     // Keep blue capture flashes through a losing result, until replay/reset.
   }
   function reset() {
-    stream.reset();followX=getStopX(0);focus.set(0,1.1,1.1);phase='idle';captureTime=0;
-    chase.root.position.set(getCrossingX(0)+8,.03,RUNNER_Z);
+    stream.reset();followX=getStopX(0);focus.set(0,1.1,1.1);phase='idle';captureTime=0;camera.zoom=1;camera.updateProjectionMatrix();
     captureLights.forEach(light=>{light.intensity=0;});if(flash)flash.style.opacity='0';
   }
   function setCrossingTarget(s) {
@@ -87,29 +82,25 @@ export function createSceneManager(canvas,container) {
   function update(dt,elapsed) {
     if(thief)stream.setPlayerX(thief.position.x);
     stream.update(dt);
-    const occupiedX=getCrossingX(stream.current),warmth=stream.activeTile.warmth;
+    const occupiedX=getCrossingX(stream.current),lightX=stream.lighting.focusX.value,capture=stream.lighting.capture.value;
     // Camera movement is continuous; district roles change at the road connector.
-    const factor=reducedMotion?1:1-Math.exp(-dt*4.5);
-    focus.x+=(followX+4.7-focus.x)*factor;
+    const factor=reducedMotion?1:1-Math.exp(-dt*7.5);
+    focus.x+=((stream.caught&&thief?thief.position.x:followX)+4.7-focus.x)*factor;
+    const zoomTarget=stream.caught&&!reducedMotion?1.08:1;
+    const zoom=camera.zoom+(zoomTarget-camera.zoom)*factor;
+    if(Math.abs(zoom-camera.zoom)>.00001){camera.zoom=zoom;camera.updateProjectionMatrix();}
     camera.position.copy(focus).add(cameraOffset);camera.lookAt(focus);camera.updateMatrixWorld();
-    key.position.set(occupiedX-3,23,1);key.target.position.set(occupiedX,0,0);
-    key.intensity=1950*warmth;
+    key.position.set(lightX-3,23,1);key.target.position.set(lightX,0,0);
+    key.intensity=1950*(1-.85*capture);
     const offsets=[[-7,-1.3],[7,-.5],[-6,MAIN_ROAD_Z+3.3],[6,MAIN_ROAD_Z+3.3]];
     for(let i=0;i<warmLights.length;i++) {
-      warmLights[i].position.set(occupiedX+offsets[i][0],2.9,offsets[i][1]);
-      warmLights[i].intensity=26*warmth;
+      warmLights[i].position.set(lightX+offsets[i][0],2.9,offsets[i][1]);
+      warmLights[i].intensity=26*(1-.85*capture);
     }
     const signal=stream.activeTile.signal;
-    signalLight.position.set(occupiedX-3.72,2.8,MAIN_ROAD_Z+3.9);
+    signalLight.position.set(occupiedX+3.72,2.8,MAIN_ROAD_Z-3.1);
     signalLight.color.set(signal==='green'?0x8bff7e:signal==='red'?0xff365b:0xffbd3f);
     signalLight.intensity=signal==='off'?0:13;
-    const previousX=getCrossingX(stream.current-1);
-    // Chase car stays behind, inside the previous district.
-    chasePosition.set(previousX+6,.03,RUNNER_Z-.35);
-    chase.root.position.lerp(chasePosition,reducedMotion?1:1-Math.exp(-dt*3.2));
-    chase.root.visible=true;
-    const blue=sirenPulse(elapsed,reducedMotion),red=sirenPulse(elapsed,reducedMotion,Math.PI);
-    chase.blueLight.intensity=230*blue;chase.redLight.intensity=135*red;
     const caught=stream.caught;
     if(caught)captureTime+=dt;
     const pulse=sirenPulse(captureTime,reducedMotion);
@@ -135,5 +126,5 @@ export function createSceneManager(canvas,container) {
   }
   reset();
   return {scene,camera,renderer,stream,reducedMotion,reset,update,dispose,setPhase,setCrossingTarget,
-    setSignal:(n,state)=>stream.setSignal(n,state),setThief:root=>{thief=root;},follow:x=>{followX=x;}};
+    setMovement:n=>stream.setMovement(n),setThief:root=>{thief=root;},follow:x=>{followX=x;}};
 }

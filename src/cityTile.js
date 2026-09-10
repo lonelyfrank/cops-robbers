@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { VoxelBatch, box } from './voxelModels.js';
 import { TILE_SIZE, MAIN_ROAD_Z, getCrossingX } from './mapLayout.js';
+import { IntersectionTraffic } from './trafficController.js';
+import { createCityLighting, applyCityLighting, getCityLightLevel, getTileReveal, smoothStep } from './cityEffects.js';
 
 const SIGNAL_COLORS = { red: 0xff365b, yellow: 0xffbd3f, green: 0x8bff7e };
 const specialMaterials = {
   window: { color: 0xe4a64f, emissive: 0xff9a26, power: 1.9 },
   lantern: { color: 0xffedb0, emissive: 0xffb239, power: 3.6 },
+  sign: { color: 0x95cdd1, emissive: 0x458caa, power: 1.3 },
 };
 
 // Tiny procedural light halo; shared across districts, never downloaded.
@@ -23,7 +26,21 @@ function randomFor(index) {
   return () => { seed = (Math.imul(seed, 1664525) + 1013904223) | 0; return (seed >>> 0) / 4294967296; };
 }
 
-function building(batch, x, z, { width = 5, depth = 4.6, floors = 2, color = 0x946752, shop = false, striped = false, tank = false } = {}) {
+export function getDistrictStyle(index) {
+  const random = randomFor(index + 503);
+  const palettes = [[0x966b55,0xa45f49,0x86624e], [0x8a8d9c,0x82716a,0x6c7e94], [0x9a826d,0x8a695a,0x798c87]];
+  const colors = palettes[index % palettes.length], awning = [0xbd4d4e,0x537f88,0xb39651][index % 3];
+  return {
+    amenity: index % 3, treeScale: .86 + random() * .2,
+    buildings: [
+      { x:-8.15, z:-7.55, width:4.5+random()*.45, depth:4.45+random()*.3, floors:2+(index%3===2?1:0), color:colors[0], tank:index%4===0, fireEscape:index%2===0 },
+      { x:-8.1, z:-.75, width:4.7+random()*.35, depth:3.35+random()*.25, floors:1+(index%4===3?1:0), color:colors[1], shop:true, striped:index%2===1, awning },
+      { x:7.65, z:-2.5, width:5.2+random()*.5, depth:5.3+random()*.35, floors:3+(index%3===1?1:0), color:colors[2], shop:true, striped:index%2===0, awning, tank:index%3!==1, fireEscape:index%3===1 },
+    ],
+  };
+}
+
+function building(batch, x, z, { width = 5, depth = 4.6, floors = 2, color = 0x946752, shop = false, striped = false, tank = false, awning = 0xbd4d4e, fireEscape = false } = {}) {
   const ground = .25, height = floors * 1.85 + 1.45;
   const front = z + depth / 2, left = x - width / 2;
   batch.add(color, [width, height, depth], [x, ground + height / 2, z]);
@@ -65,7 +82,7 @@ function building(batch, x, z, { width = 5, depth = 4.6, floors = 2, color = 0x9
     }
     const awningWidth = width - .25, strips = striped ? 10 : 1;
     for (let j = 0; j < strips; j++) {
-      const w = awningWidth / strips, color = striped && j % 2 ? 0xf0d6ad : 0xbd4d4e;
+      const w = awningWidth / strips, color = striped && j % 2 ? 0xf0d6ad : awning;
       batch.add(color, [w, .15, .87], [x - awningWidth / 2 + (j + .5) * w, 1.92, front + .39], [-.22, 0, 0]);
       batch.add(color, [w, .24, .14], [x - awningWidth / 2 + (j + .5) * w, 1.73, front + .8]);
     }
@@ -85,6 +102,42 @@ function building(batch, x, z, { width = 5, depth = 4.6, floors = 2, color = 0x9
     batch.add(0x87503f, [1.42, 1.19, 1.42], [x + .65, height + 1.75, z + .57]);
     batch.add(0x333d54, [1.53, .16, 1.53], [x + .65, height + 2.38, z + .57]);
   }
+  if (fireEscape) {
+    for (let floor = 1; floor <= floors; floor++) {
+      const y = .5 + floor * 1.85;
+      batch.add(0x424e62, [.65,.1,1.8], [left-.32,y,z]);
+      batch.add(0x424e62, [.08,.55,1.8], [left-.63,y+.3,z]);
+    }
+    for (const dz of [-.42,.42]) batch.add(0x424e62,[.1,height-.5,.08],[left-.45,height/2+.55,z+dz]);
+    for (let y=1;y<height;y+=.32) batch.add(0x67788b,[.1,.07,.9],[left-.45,y,z]);
+  }
+}
+
+function urbanAmenity(batch, variant) {
+  const x=7.5,z=-10;
+  if(variant===0) {
+    // Glass bus shelter with a lit route panel, without floating text.
+    batch.add(0x52667a,[3.35,.12,1.55],[x,2.55,z]);
+    batch.add(0x45647a,[3.2,1.8,.1],[x,1.55,z-.65]);
+    for(const dx of [-1.5,1.5]) batch.add(0x738391,[.12,2.25,.12],[x+dx,1.4,z]);
+    batch.add(0x857867,[2.5,.14,.4],[x,.85,z-.15]);
+    batch.add('sign',[.65,1.3,.12],[x+1.05,1.62,z-.56]);
+  } else if(variant===1) {
+    // Subway stairwell and low guard rails.
+    batch.add(0x182337,[2.8,.06,2.6],[x,.28,z]);
+    for(let step=0;step<5;step++) batch.add(0x7a8791,[2.2,.08,.35],[x,.32+step*.085,z-.8+step*.35]);
+    for(const dx of [-1.4,1.4]) {
+      batch.add(0x54787c,[.12,.1,2.8],[x+dx,1.35,z]);
+      for(const dz of [-1.2,1.2]) batch.add(0x54787c,[.1,1.05,.1],[x+dx,.85,z+dz]);
+    }
+    batch.add('sign',[1.1,.45,.12],[x,1.4,z-1.3]);
+  } else {
+    // Compact newsstand, roof canopy and bright display.
+    batch.add(0x476f72,[2.25,1.85,1.6],[x,1.2,z]);
+    batch.add(0x9c8968,[2.75,.17,2],[x,2.22,z+.1]);
+    batch.add('sign',[1.8,.7,.1],[x,1.5,z+.83]);
+    batch.add(0xc9b698,[1.9,.15,.55],[x,.95,z+1]);
+  }
 }
 
 function tree(batch, x, z, scale = 1, color = 0x1d6750) {
@@ -102,16 +155,19 @@ function planter(batch, x, z, width, depth) {
   }
 }
 
-export function createCityTile(index) {
+export function createCityTile(index,{lighting=createCityLighting()}={}) {
   const root = new THREE.Group(); root.name = `district-${index}`;
   root.position.x = getCrossingX(index);
-  const random = randomFor(index), batch = new VoxelBatch(), records = new Map(), halos = [], signals = [];
+  const random = randomFor(index), records = new Map(), halos = [], signals = [], emerging = [];
+  let batch = new VoxelBatch();
   const half = TILE_SIZE / 2;
-  const tile = { index, root, role: 'next', reveal: 1, warmth: 0, disposed: false, signal: 'off', lampPositions: [], records, signals };
+  const style = getDistrictStyle(index);
+  const tile = { index, root, style, lighting, emerging, role: 'next', reveal: 1, warmth: .2, disposed: false, signal: 'red', crossSignal: 'green', lampPositions: [], records, signals };
   const getMaterial = key => {
     if (!records.has(key)) {
       const config = specialMaterials[key] ?? { color: key };
       const m = new THREE.MeshStandardMaterial({ color: config.color, roughness: .85, metalness: 0, alphaHash: true, emissive: config.emissive ?? 0 });
+      applyCityLighting(m,lighting);
       records.set(key, { material: m, base: new THREE.Color(config.color), power: config.power ?? 0, kind: config.power ? 'warm' : 'solid' });
     }
     return records.get(key).material;
@@ -154,13 +210,24 @@ export function createCityTile(index) {
     batch.add(0xf0eadc, [1.22, .025, .4], [side * 3.73, .137, MAIN_ROAD_Z - 2.43 + i * .695]);
     batch.add(0xf0eadc, [.4, .025, 1.22], [-2.43 + i * .695, .142, MAIN_ROAD_Z + side * 3.73]);
   }
-  // Three buildings arranged as in the supplied reference: two left, one right.
-  const brickPalettes = [0x966b55, 0x9c765e, 0x86624e];
-  building(batch, -8.15, -7.55, { width: 4.7, depth: 4.6, floors: 2, color: brickPalettes[index % 3] });
-  building(batch, -8.1, -.65, { width: 4.9, depth: 3.55, floors: 1, color: 0xa45f49, shop: true });
-  building(batch, 7.65, -2.36, { width: 5.5, depth: 5.65, floors: 3, color: brickPalettes[(index + 1) % 3], shop: true, striped: true, tank: true });
+  // Roads stay flat while individual structures rise from their ground anchors.
+  batch.build(root,getMaterial);
+  function growthGroup(name,delay) {
+    const anchor=new THREE.Group(),content=new THREE.Group();
+    anchor.name=name;anchor.position.y=.25;content.position.y=-.25;
+    anchor.add(content);root.add(anchor);emerging.push({root:anchor,delay,growth:1});
+    return content;
+  }
+  for(const [i,config] of style.buildings.entries()) {
+    const buildingBatch=new VoxelBatch();
+    building(buildingBatch,config.x,config.z,config);
+    buildingBatch.build(growthGroup(`building-${i}`,i*.12),getMaterial);
+  }
+  const objectRoot=growthGroup('street-objects',.08);
+  batch=new VoxelBatch();
+  urbanAmenity(batch,style.amenity);
   // Trees, planted courtyards and block walls fill the spaces between buildings.
-  for (const [x,z,scale] of [[-11.2,-10.8,.88],[-4.35,-10.5,.88],[-11.4,-4.25,.8],[-4.05,-4.7,.85],[4.2,-10.15,1.1],[7.3,-10.8,1.25],[11,-9.3,.8],[11.55,-4.3,.85],[11.4,.15,.7],[-10.5,11.4,.64],[10.8,11.3,.64]]) tree(batch,x,z,scale);
+  for (const [x,z,scale] of [[-11.2,-10.8,.88],[-4.35,-10.5,.88],[-11.4,-4.25,.8],[-4.05,-4.7,.85],[4.2,-10.15,1.1],[11,-9.3,.8],[11.55,-4.3,.85],[11.4,.15,.7],[-10.5,11.4,.64],[10.8,11.3,.64]]) tree(batch,x,z,scale*style.treeScale);
   planter(batch, -4.3, -7.35, 1.17, 3.45); planter(batch, 5.35, -8.2, 3.6, 1.16); planter(batch, 10.9, -6.3, 1.15, 3.35);
   for (const [x,z] of [[-11.25,-.3],[-5.15,.25],[4.6,-.3],[10.6,.32],[-6.6,11.2],[7.1,11.2]]) {
     batch.add(0xa58065, [.56,.57,.56], [x,.54,z]); batch.add(0x43894a, [.7,.63,.67], [x,1.02,z]);
@@ -185,13 +252,17 @@ export function createCityTile(index) {
     batch.add('lantern',[.3,.48,.3],[x,2.8,z]);
     batch.add(0x3d4b5c,[.49,.12,.49],[x,3.1,z]);
     const material = new THREE.SpriteMaterial({map:haloTexture,color:0xffb14d,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
-    const sprite = new THREE.Sprite(material); sprite.position.set(x,2.84,z);sprite.scale.set(1.55,1.55,1); root.add(sprite);halos.push(sprite);
+    const sprite = new THREE.Sprite(material); sprite.position.set(x,2.84,z);sprite.scale.set(1.55,1.55,1); objectRoot.add(sprite);halos.push(sprite);
     tile.lampPositions.push(new THREE.Vector3(x,2.85,z));
   }
-  for(const x of [-11.6,-4.3,4.3,11.6]) for(const z of [1.12,8.15]) streetLamp(x,z);
+  for(const x of [-11.6,-4.3,4.3,11.6]) for(const z of [1.12,8.15]) {
+    // Keep the foreground corner clear so poles cannot cover the road multiplier.
+    if(x===-4.3&&z===8.15) continue;
+    streetLamp(x,z);
+  }
   streetLamp(-3.9,-10.8);streetLamp(3.9,-10.8);
 
-  function trafficLight(x,z) {
+  function trafficLight(x,z,axis='main') {
     batch.add(0x354457,[.51,.24,.51],[x,.39,z]);
     batch.add(0x53687b,[.2,2.35,.2],[x,1.64,z]);
     batch.add(0x15213a,[.57,1.34,.47],[x,3.12,z]);
@@ -199,39 +270,45 @@ export function createCityTile(index) {
     const lamps = {};
     for(const [i,name] of ['red','yellow','green'].entries()) {
       const m = new THREE.MeshStandardMaterial({color:0x162436,emissive:SIGNAL_COLORS[name],roughness:.6,alphaHash:true});
-      lamps[name]=box(root,[.31,.27,.08],[x,3.55-i*.43,z+.277],m,{shadow:false});
+      lamps[name]=box(objectRoot,[.31,.27,.08],[x,3.55-i*.43,z+.277],m,{shadow:false});
       batch.add(0x0f1c2e,[.4,.06,.19],[x,3.72-i*.43,z+.3]);
     }
-    signals.push({lamps,position:new THREE.Vector3(x,3,z)});
+    signals.push({lamps,axis,position:new THREE.Vector3(x,3,z)});
   }
-  trafficLight(-3.72,MAIN_ROAD_Z+3.36); trafficLight(3.72,MAIN_ROAD_Z-3.36);
-  batch.build(root,getMaterial);
+  trafficLight(3.72,MAIN_ROAD_Z-3.36);
+  trafficLight(-3.72,MAIN_ROAD_Z-3.36,'cross');
+  batch.build(objectRoot,getMaterial);
+  tile.traffic = new IntersectionTraffic(index,getMaterial); objectRoot.add(tile.traffic.root);
 
   tile.setSignal = state => {
     if(!['off','red','yellow','green'].includes(state)) throw new RangeError('Stato semaforo non valido.');
     tile.signal=state;
   };
-  tile.setRole = role => {
-    if(tile.role!==role && role!=='current') tile.warmth=0;
-    tile.role=role;
-  };
-  tile.update = (dt,reveal,{reducedMotion=false,caught=false}={}) => {
-    tile.reveal=reveal;
-    const target = tile.role==='current' && !caught ? 1 : 0;
-    tile.warmth = reducedMotion ? target : tile.warmth+(target-tile.warmth)*(1-Math.exp(-dt*6));
-    if(target===0) tile.warmth=0;
-    const brightness = tile.role==='current' ? .35+.65*tile.warmth : tile.role==='previous' ? .52 : .19;
-    for(const record of records.values()) {
-      record.material.color.copy(record.base).multiplyScalar(brightness);
-      record.material.emissiveIntensity=record.power*tile.warmth;
-      record.material.opacity=reveal;
+  tile.setRole = role => { tile.role=role; };
+  tile.update = (dt,progress,{reducedMotion=false,trafficBlocked=false}={}) => {
+    const reveal=getTileReveal(reducedMotion?1:progress);
+    tile.reveal=reveal.base;tile.progress=progress;
+    root.position.y=(reveal.base-1)*3.4;
+    for(const item of emerging) {
+      item.growth=smoothStep((reveal.objects-item.delay)/(1-item.delay));
+      item.root.scale.y=Math.max(.001,item.growth);
+      item.root.visible=item.growth>.001;
     }
-    for(const sprite of halos) sprite.material.opacity=tile.warmth*reveal*.75;
+    const focus=lighting.focusX.value,capture=1-.82*lighting.capture.value;
+    tile.warmth=getCityLightLevel(root.position.x,focus)*capture;
+    for(const record of records.values()) {
+      record.material.color.copy(record.base);
+      record.material.emissiveIntensity=record.power;
+      record.material.opacity=reveal.base;
+    }
+    for(const sprite of halos) sprite.material.opacity=getCityLightLevel(root.position.x+sprite.position.x,focus)*capture*reveal.base*.75;
+    tile.crossSignal = !trafficBlocked && tile.signal==='red' ? 'green' : 'red';
+    tile.traffic.update(dt,tile.crossSignal==='green',reducedMotion,trafficBlocked);
     for(const signal of signals) for(const [name,lamp] of Object.entries(signal.lamps)) {
-      const on=tile.role==='current' && tile.signal===name;
+      const on=tile.role!=='retiring' && (signal.axis==='main'?tile.signal:tile.crossSignal)===name;
       lamp.material.color.set(on?SIGNAL_COLORS[name]:0x112038);
-      lamp.material.emissiveIntensity=on?2.5:0;
-      lamp.material.opacity=reveal;
+      lamp.material.emissiveIntensity=on?2.5*getCityLightLevel(root.position.x+signal.position.x,focus):0;
+      lamp.material.opacity=reveal.base;
     }
   };
   tile.dispose = () => {

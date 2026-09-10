@@ -1,5 +1,5 @@
-import { DIFFICULTIES, MAX_CROSSINGS, HELICOPTER_THRESHOLD, HELICOPTER_BONUS, RTP_TARGET, getGreenProbability, getMultiplier, calculatePayout, buildRiskTable } from './gameMath.js';
-import { PHASES, MIN_BET, MAX_BET, COUNTDOWN_MS } from './gameState.js';
+import { DIFFICULTIES, MAX_CROSSINGS, RTP_TARGET, getGreenProbability, getMultiplier, calculatePayout, buildRiskTable } from './gameMath.js';
+import { PHASES, MIN_BET, MAX_BET } from './gameState.js';
 
 const moneyFormatter = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const numberFormatter = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -41,7 +41,7 @@ export function createUI(game, actions) {
     $('risk-caption').textContent = `Probabilità · ${DIFFICULTIES[s.difficulty].label}`;
     $('risk-table-body').replaceChildren(...buildRiskTable(s.difficulty).map(row => {
       const tr = document.createElement('tr');
-      const values = [String(row.n).padStart(2, '0') + (row.n >= HELICOPTER_THRESHOLD ? ' · elicottero' : ''), `${percentFormatter.format(row.greenProbability * 100)}%`, `${(row.cumulativeProbability * 100).toLocaleString('it-IT', { maximumFractionDigits: 3 })}%`, `${row.totalMultiplier.toLocaleString('it-IT', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}×`];
+      const values = [String(row.n).padStart(2, '0'), `${percentFormatter.format(row.greenProbability * 100)}%`, `${(row.cumulativeProbability * 100).toLocaleString('it-IT', { maximumFractionDigits: 3 })}%`, `${row.totalMultiplier.toLocaleString('it-IT', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}×`];
       for (const value of values) { const td = document.createElement('td'); td.textContent = value; tr.appendChild(td); }
       return tr;
     }));
@@ -96,8 +96,6 @@ export function createUI(game, actions) {
     $('potential-label').textContent = s.phase === PHASES.RESULT ? (s.payout > 0 ? 'Incasso accreditato' : 'Puntata persa') : decision ? 'Puoi incassare' : s.phase === PHASES.ESCAPING ? 'Incasso accreditato' : 'Puntata in gioco';
     if (s.phase === PHASES.IDLE) $('potential-label').textContent = 'Puntata pronta';
     $('potential').textContent = formatMoney(s.phase === PHASES.RESULT ? (s.payout || s.stake) : potential);
-    $('helicopter-active').hidden = s.crossing < HELICOPTER_THRESHOLD;
-    $('helicopter-active').textContent = `ESTRAZIONE +${Math.round(HELICOPTER_BONUS * 100)}% INCLUSO`;
     $('crossing-count').textContent = `${String(s.crossing).padStart(2, '0')} / ${MAX_CROSSINGS}`;
     const probability = getGreenProbability(pendingCrossing, s.difficulty);
     $('next-probability').innerHTML = `${percentFormatter.format(probability * 100)}<span>%</span>`;
@@ -109,31 +107,24 @@ export function createUI(game, actions) {
     for (const button of document.querySelectorAll('[data-difficulty]')) button.setAttribute('aria-pressed', String(button.dataset.difficulty === s.difficulty));
     $('difficulty-hint').textContent = DIFFICULTIES[s.difficulty].description;
     $('rtp-label').textContent = `${Math.round(RTP_TARGET * 100)}%`;
-    cashoutButton.hidden = !decision;
     cashoutButton.disabled = !decision || !ready;
-    $('cashout-amount').textContent = `${formatMoney(potential)} CR`;
+    $('cashout-amount').textContent = s.crossing > 0 ? `${formatMoney(potential)} CR` : '—';
     mainButton.disabled = !ready || !(configure || decision) || (configure && validateBet() === null);
     const labels = {
-      idle: ['PRONTO A PARTIRE', 'Avvia la fuga', 'Il primo semaforo si accende dopo 1,5 s.'],
-      countdown: ['OCCHI SUL SEMAFORO', 'Semaforo in arrivo…', 'Attendi l’esito prima di scegliere.'],
+      idle: ['PRONTO A PARTIRE', 'Avvia la fuga', 'Rosso al ladro, verde al traffico.'],
       running: ['VIA LIBERA', 'Attraversamento…', 'Il prossimo incrocio ti aspetta.'],
-      ready: [s.crossing >= HELICOPTER_THRESHOLD ? 'ELICOTTERO DISPONIBILE' : 'SEI ANCORA IN GIOCO', 'Prossimo incrocio', 'Prosegui o incassa. Decidi con calma.'],
+      ready: ['SEI ANCORA IN GIOCO', 'Prossimo incrocio', 'Traffico in transito. Prosegui o incassa.'],
       caught: ['FINE DELLA CORSA', 'Ti hanno beccato', 'Puntata persa. Tra poco puoi ripartire.'],
-      escaping: ['FUGA RIUSCITA', 'Fuga in corso…', s.crossing >= HELICOPTER_THRESHOLD ? 'Il complice ti porta al sicuro.' : 'Il vicolo è la tua via d’uscita.'],
+      escaping: ['FUGA RIUSCITA', 'Fuga in corso…', 'Il vicolo è la tua via d’uscita.'],
       result: [s.payout > 0 ? 'AL SICURO' : 'BECCATO', 'Avvia una nuova fuga', 'Imposta la puntata per una nuova partita.'],
     };
     const [phase, action, caption] = labels[s.phase];
     $('phase-label').textContent = phase; $('main-button-label').textContent = action; $('action-caption').textContent = caption;
-    $('countdown').hidden = s.phase !== PHASES.COUNTDOWN;
-    if (s.phase === PHASES.COUNTDOWN) {
-      $('countdown-number').textContent = (Math.ceil(s.countdown / 100) / 10).toFixed(1).replace('.', ',');
-      $('countdown-progress').style.transform = `scaleX(${s.countdown / COUNTDOWN_MS})`;
-    }
     const showResult = s.phase === PHASES.RESULT;
     $('result-banner').hidden = !showResult;
     if (showResult) {
       $('result-banner').classList.toggle('lost', s.payout === 0);
-      $('result-eyebrow').textContent = s.payout > 0 ? (s.crossing >= HELICOPTER_THRESHOLD ? 'ESTRAZIONE COMPLETATA' : 'TRACCE PERSE') : `ARRESTATO ALL’INCROCIO ${s.crossing + 1}`;
+      $('result-eyebrow').textContent = s.payout > 0 ? 'TRACCE PERSE' : `CIRCONDATO ALL’INCROCIO ${s.crossing + 1}`;
       $('result-title').textContent = s.payout > 0 ? `+${formatMoney(s.payout)} CR` : 'BECCATO!';
       $('result-description').textContent = s.payout > 0 ? `${s.crossing} ${s.crossing === 1 ? 'incrocio superato' : 'incroci superati'} · ${formatMultiplier(s.multiplier)}× · Utile ${formatMoney(s.payout - s.stake)} CR` : `Hai perso ${formatMoney(s.stake)} CR. La città ti aspetta per la prossima fuga.`;
     }
@@ -148,21 +139,19 @@ export function createUI(game, actions) {
         r.item.classList.toggle('is-passed', n < s.crossing);
         r.item.classList.toggle('is-next', n === pendingCrossing && s.phase !== PHASES.CAUGHT && !(s.phase === PHASES.RESULT && !s.payout));
         r.item.classList.toggle('is-caught', n === pendingCrossing && (s.phase === PHASES.CAUGHT || (s.phase === PHASES.RESULT && s.payout === 0)));
-        r.item.classList.toggle('is-heli', n >= HELICOPTER_THRESHOLD);
-        r.item.setAttribute('aria-label', `Incrocio ${n}, moltiplicatore ${formatMultiplier(getMultiplier(n, s.difficulty))}${n <= s.crossing ? ', superato' : ''}${n >= HELICOPTER_THRESHOLD ? ', elicottero disponibile' : ''}`);
+        r.item.setAttribute('aria-label', `Incrocio ${n}, moltiplicatore ${formatMultiplier(getMultiplier(n, s.difficulty))}${n <= s.crossing ? ', superato' : ''}`);
       }
       if (changedPhase && s.crossing > 0) {
         const route = $('route'), target = routeItems[Math.min(s.crossing, MAX_CROSSINGS - 1)].item;
-        route.scrollTo({ left: target.offsetLeft - route.offsetLeft - route.clientWidth / 2 + target.clientWidth / 2, behavior: 'instant' });
+        route.scrollTo({ left: target.offsetLeft - route.offsetLeft - route.clientWidth / 2 + target.clientWidth / 2, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
       } else if (s.crossing === 0) $('route').scrollLeft = 0;
     }
     let status = '';
-    if (s.phase === PHASES.IDLE) status = 'Imposta la puntata. La fuga comincia al primo incrocio.';
-    else if (s.phase === PHASES.COUNTDOWN) status = `Incrocio ${pendingCrossing}: semaforo in arrivo. ${percentFormatter.format(probability * 100)}% di probabilità di verde.`;
+    if (s.phase === PHASES.IDLE) status = 'Il ladro aspetta al rosso. Imposta la puntata e avvia la fuga quando vuoi.';
     else if (s.phase === PHASES.RUNNING) status = `Verde! Stai attraversando l’incrocio ${pendingCrossing}.`;
     else if (decision) status = `Incrocio ${s.crossing} superato. Incassa ${formatMoney(potential)} CR oppure continua: il prossimo verde ha probabilità ${percentFormatter.format(probability * 100)}%.`;
     else if (s.phase === PHASES.CAUGHT) status = `Rosso all’incrocio ${pendingCrossing}. La polizia ha fermato la fuga.`;
-    else if (s.phase === PHASES.ESCAPING) status = `${formatMoney(s.payout)} CR accreditati. ${s.crossing >= HELICOPTER_THRESHOLD ? 'Arriva l’elicottero.' : 'Il ladro svolta nel vicolo.'}`;
+    else if (s.phase === PHASES.ESCAPING) status = `${formatMoney(s.payout)} CR accreditati. Il ladro svolta nel vicolo.`;
     else status = s.payout ? `Fuga riuscita: incassati ${formatMoney(s.payout)} CR. Puoi iniziare una nuova partita.` : `Puntata persa. ${s.balance < MIN_BET ? 'Ripristina 1.000 CR per continuare la demo.' : 'Puoi iniziare una nuova partita.'}`;
     if (status !== lastStatus) { lastStatus = status; $('status-text').textContent = status; }
     const newHistoryKey = s.history.map(r => `${r.id}:${r.outcome}`).join(',');

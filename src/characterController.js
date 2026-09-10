@@ -1,6 +1,5 @@
-import { createThief, createPoliceCar, createHelicopter } from './voxelModels.js';
-import { getCrossingX, getStopX, MAIN_ROAD_Z, RUNNER_Z, ROAD_Y, sirenPulse } from './mapLayout.js';
-import { HELICOPTER_THRESHOLD } from './gameMath.js';
+import { createThief, createPoliceCar } from './voxelModels.js';
+import { getCrossingX, getStopX, getPursuitStopX, RUNNER_Z, ROAD_Y, TILE_SIZE, sirenPulse } from './mapLayout.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
 const smooth = value => { const p = clamp(value); return p * p * (3 - 2 * p); };
@@ -8,8 +7,12 @@ const lerp = (a, b, t) => a + (b - a) * t;
 
 export class CharacterController {
   constructor(scene, { reducedMotion = false } = {}) {
-    this.thief = createThief(); this.police = createPoliceCar(); this.helicopter = createHelicopter();
-    scene.add(this.thief.root, this.police.root, this.helicopter.root);
+    this.thief = createThief(); this.police = createPoliceCar(); this.chase = createPoliceCar();
+    this.flankPolice = [createPoliceCar({lights:false}),createPoliceCar({lights:false})];
+    this.flankPolice.forEach((car,i)=>{car.root.name=i===0?'north-roadblock':'south-roadblock';car.red.material=car.blue.material;});
+    this.chase.root.name = 'pursuit-car'; this.chase.root.rotation.y = Math.PI / 2;
+    this.chase.blueLight.distance = 21; this.chase.redLight.distance = 21;
+    scene.add(this.thief.root, this.police.root, this.chase.root,...this.flankPolice.map(car=>car.root));
     this.reducedMotion = reducedMotion; this.animation = null; this.time = 0; this.arrested = false;
     this.police.red.material = this.police.blue.material;
     this.police.redLight.color.set(0x467bff);
@@ -19,38 +22,53 @@ export class CharacterController {
     this.animation = null; this.arrested = false; this.time = 0;
     this.thief.root.position.set(getStopX(0), ROAD_Y, RUNNER_Z); this.thief.root.rotation.set(0, 0, 0); this.thief.root.visible = true;
     this.thief.body.position.set(0, 0, 0); this.thief.body.rotation.set(0, 0, 0);
+    this.lootTarget = 1; this.lootScale = 1; this.thief.lootBag.scale.set(1, 1, 1);
     this.thief.legs.forEach(leg => leg.rotation.set(0, 0, 0)); this.thief.arms.forEach(arm => arm.rotation.set(0, 0, 0));
     this.police.root.visible = false; this.police.blueLight.intensity = 0; this.police.redLight.intensity = 0;
-    this.helicopter.root.visible = false;
+    this.flankPolice.forEach(car=>{car.root.visible=false;car.root.position.set(0,0,0);car.root.rotation.set(0,0,0);});
+    this.chase.root.position.set(getPursuitStopX(0), .03, RUNNER_Z);
+    this.chase.blueLight.intensity = 0; this.chase.redLight.intensity = 0;
   }
   run(n, onComplete) {
-    this.animation = { kind: 'run', elapsed: 0, duration: this.reducedMotion ? .65 : 2.05, fromX: this.thief.root.position.x, toX: getStopX(n), onComplete };
+    const fromX = this.thief.root.position.x, toX = getStopX(n);
+    const chaseFromX = this.chase.root.position.x, chaseToX = getPursuitStopX(n);
+    const duration = this.reducedMotion ? .45 : Math.max(.65, Math.abs(toX - fromX) / 19, Math.abs(chaseToX - chaseFromX) / 19);
+    this.animation = { kind: 'run', elapsed: 0, duration, fromX, toX,
+      chaseFromX, chaseToX, onComplete };
+  }
+  setLoot(multiplier, crossing) {
+    const growth = crossing * .09 + Math.log2(Math.max(1, multiplier)) * .16;
+    this.lootTarget = 1 + 1.4 * (1 - Math.exp(-growth));
   }
   caught(n, onComplete) {
     const x = getCrossingX(n);
     this.arrested = true; this.time = 0;
-    this.police.root.visible = true; this.police.root.position.set(x, .08, -11.6); this.police.root.rotation.y = 0;
-    this.animation = { kind: 'caught', elapsed: 0, duration: this.reducedMotion ? 1 : 2.4, onComplete };
+    this.police.root.visible = false; this.police.root.position.set(x + TILE_SIZE*2, .03, RUNNER_Z); this.police.root.rotation.y = -Math.PI / 2;
+    this.flankPolice.forEach((car,i)=>{
+      car.root.visible=false;car.root.rotation.y=i===0?0:Math.PI;
+      car.root.position.set(x+(i===0?-1.35:1.35),.03,i===0?-22:RUNNER_Z+22);
+    });
+    this.animation = { kind: 'caught', elapsed: 0, duration: this.reducedMotion ? .85 : 2.2,
+      crossingX:x, captureX:x-.2, fromX: this.thief.root.position.x,
+      policeFromX:x+TILE_SIZE*2, chaseFromX:this.chase.root.position.x, onComplete };
   }
-  escape(n, onComplete) {
-    const kind = n >= HELICOPTER_THRESHOLD ? 'helicopter' : 'alley';
-    this.animation = { kind, elapsed: 0, duration: this.reducedMotion ? 1 : kind === 'helicopter' ? 4.4 : 1.7, x: this.thief.root.position.x, z: this.thief.root.position.z, onComplete };
-    if (kind === 'helicopter') {
-      this.helicopter.root.visible = true;
-      this.helicopter.root.rotation.set(0, -Math.PI / 2, 0);
-      this.helicopter.root.position.set(this.animation.x + 15, 12, RUNNER_Z + .85);
-      this.helicopter.rope.visible = true;
-    }
+  escape(onComplete) {
+    this.animation = { kind: 'alley', elapsed: 0, duration: this.reducedMotion ? .65 : 1.05,
+      x: this.thief.root.position.x, z: this.thief.root.position.z, onComplete };
   }
-  poseRun(time) {
-    const wave = Math.sin(time * 18);
+  poseRun(time, strength = 1) {
+    const wave = Math.sin(time * 18) * strength;
     this.thief.legs[0].rotation.z = wave * .73; this.thief.legs[1].rotation.z = -wave * .73;
     this.thief.arms[0].rotation.z = -wave * .55; this.thief.arms[1].rotation.z = wave * .55;
-    this.thief.body.position.y = Math.abs(Math.sin(time * 18)) * .085;
-    this.thief.body.rotation.z = -.08;
+    this.thief.body.position.y = Math.abs(wave) * .085;
+    this.thief.body.rotation.z = -.08 * strength;
   }
   update(dt) {
     this.time += dt;
+    this.lootScale += (this.lootTarget - this.lootScale) * (this.reducedMotion ? 1 : 1 - Math.exp(-dt * 7));
+    this.thief.lootBag.scale.set(this.lootScale, 1 + (this.lootScale - 1) * .72, this.lootScale);
+    this.chase.blueLight.intensity = 230 * sirenPulse(this.time, this.reducedMotion);
+    this.chase.redLight.intensity = 135 * sirenPulse(this.time, this.reducedMotion, Math.PI);
     if (this.arrested) {
       this.police.blueLight.intensity = 115 * sirenPulse(this.time, this.reducedMotion);
       this.police.redLight.intensity = 100 * sirenPulse(this.time, this.reducedMotion, 1);
@@ -64,37 +82,35 @@ export class CharacterController {
     const p = clamp(a.elapsed / a.duration);
     if (a.kind === 'run') {
       this.thief.root.position.x = lerp(a.fromX, a.toX, smooth(p));
-      this.poseRun(a.elapsed);
+      this.chase.root.position.x = lerp(a.chaseFromX, a.chaseToX, smooth(p));
+      this.poseRun(a.elapsed, smooth(p / .12) * (1 - smooth((p - .8) / .2)));
     } else if (a.kind === 'caught') {
-      this.police.root.position.z = lerp(-11.6, MAIN_ROAD_Z, 1 - (1 - clamp(p * 1.8)) ** 3);
-      const handsUp = smooth((p - .15) / .3);
-      this.thief.arms[0].rotation.z = -2.65 * handsUp; this.thief.arms[1].rotation.z = -2.65 * handsUp;
-      this.thief.body.rotation.z = .06 * handsUp;
-      this.thief.legs.forEach(leg => { leg.rotation.z = 0; });
+      // The thief enters the junction; four cars close a ring from existing roads.
+      this.thief.root.position.x = lerp(a.fromX,a.captureX,smooth(p/.32));
+      this.poseRun(a.elapsed,1-smooth(p/.32));
+      this.chase.root.position.x = lerp(a.chaseFromX,a.captureX-3.8,smooth((p-.05)/.75));
+      this.police.root.position.x = lerp(a.policeFromX,a.captureX+3.6,smooth(p/.78));
+      this.police.root.visible=this.police.root.position.x<=a.crossingX+TILE_SIZE*1.5-.5;
+      const [north,south]=this.flankPolice;
+      north.root.position.z=lerp(-22,RUNNER_Z-3.4,smooth((p-.12)/.65));
+      south.root.position.z=lerp(RUNNER_Z+22,RUNNER_Z+3.4,smooth((p-.22)/.6));
+      north.root.visible=north.root.position.z>=-TILE_SIZE/2-1.5;
+      south.root.visible=south.root.position.z<=TILE_SIZE/2+1.5;
+      const handsUp = smooth((p - .3) / .35);
+      this.thief.arms.forEach(arm=>{arm.rotation.z=lerp(arm.rotation.z,-2.65,handsUp);});
+      this.thief.body.rotation.z = lerp(this.thief.body.rotation.z,.06,handsUp);
     } else if (a.kind === 'alley') {
       this.thief.root.rotation.y = -Math.PI / 2 * smooth(p * 3);
       this.thief.root.position.z = lerp(a.z, 12.7, smooth(p)); this.poseRun(a.elapsed);
       this.thief.root.position.y = lerp(ROAD_Y, .13, smooth((p-.2)/.3));
       if (p > .9) this.thief.root.visible = false;
-    } else if (a.kind === 'helicopter') {
-      const h = this.helicopter;
-      h.rotor.rotation.y += dt * (this.reducedMotion ? 3 : 34); h.tailRotor.rotation.x += dt * (this.reducedMotion ? 3 : 42);
-      const approach = smooth(p / .37), lift = smooth((p - .5) / .24), depart = smooth((p - .73) / .27);
-      h.root.position.set(lerp(a.x + 15, a.x, approach) - depart * 17, lerp(12, 5.3, approach) + depart * 10, RUNNER_Z + .85);
-      h.root.rotation.z = depart * .12;
-      const ropeLength = Math.max(.5, (h.root.position.y - 2.4) * (1 - lift));
-      h.rope.scale.y = ropeLength; h.rope.position.y = -1 - ropeLength / 2;
-      if (p > .37) {
-        this.thief.arms.forEach(arm => { arm.rotation.z = -2.9 * smooth((p - .37) / .13); });
-        this.thief.root.position.y = ROAD_Y + lift * 3.5;
-        this.thief.root.position.z = lerp(a.z, RUNNER_Z + 1.82, smooth((p - .37) / .12));
-      }
-      if (p > .72) { this.thief.root.visible = false; h.rope.visible = false; }
+
     }
     if (p === 1) {
       // Clear first: completion may synchronously start the next animation.
       this.animation = null;
       if (a.kind === 'run') {
+        this.thief.root.position.x = a.toX; this.chase.root.position.x = a.chaseToX;
         this.thief.body.rotation.z = 0; this.thief.body.position.y = 0;
         this.thief.legs.forEach(leg => { leg.rotation.z = 0; }); this.thief.arms.forEach(arm => { arm.rotation.z = 0; });
       }
