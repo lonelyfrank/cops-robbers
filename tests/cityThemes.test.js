@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CITY_THEME_IDS, getCityTheme, getRoundTheme } from '../src/world/cityThemes.js';
+import { CITY_THEME_IDS, getCityTheme, getRoundTheme } from '../src/world/themes/index.js';
 import { CityStream } from '../src/world/CityStream.js';
 import { createCityTile } from '../src/world/CityTile.js';
 import { getCrossingX, getCurrentTile, getStopX } from '../src/world/mapLayout.js';

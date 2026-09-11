@@ -10,7 +10,7 @@ import {
   smoothStep,
 } from './cityEffects.js';
 
-import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
+import { getCityTheme, DEFAULT_CITY_THEME } from './themes/index.js';
 
 export function createHaloTexture() {
   // Tiny procedural light halo; shared across districts, never downloaded.

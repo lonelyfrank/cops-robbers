@@ -2,7 +2,7 @@ import { createCityTile, createHaloTexture } from './CityTile.js';
 import { getCurrentTile, getTileWindow, getTileRole, getStopX, getCrossingX } from './mapLayout.js';
 import { MAX_CROSSINGS } from '../config/gameplay.js';
 import { createCityLighting } from './cityEffects.js';
-import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
+import { getCityTheme, DEFAULT_CITY_THEME } from './themes/index.js';
 import { CITY } from '../config/animation.js';
 
 /** Owns precisely three live districts and at most one dissolving old district. */

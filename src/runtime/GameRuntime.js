@@ -8,7 +8,7 @@
  */
 import { PHASES } from '../core/gameState.js';
 import { getStopX } from '../world/mapLayout.js';
-import { getRoundTheme } from '../world/cityThemes.js';
+import { getRoundTheme } from '../world/themes/index.js';
 
 /**
  * What the runtime needs from the actors. Declared structurally, so the contract is

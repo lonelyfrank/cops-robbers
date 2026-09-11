@@ -5,7 +5,7 @@
 import { MAX_CROSSINGS } from '../../config/gameplay.js';
 import { formatMoney } from '../../core/format.js';
 import { PHASES } from '../../core/gameState.js';
-import { getRoundTheme } from '../../world/cityThemes.js';
+import { getRoundTheme } from '../../world/themes/index.js';
 import { el, timeEl } from '../dom.js';
 import { createMultiplierReel, getReelValues } from './multiplierReel.js';
 

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { VoxelBatch } from '../../rendering/voxelModels.js';
 import { IntersectionTraffic } from '../TrafficController.js';
 import { MAIN_ROAD_Z } from '../mapLayout.js';
-import { getCityTheme, DEFAULT_CITY_THEME } from '../cityThemes.js';
+import { getCityTheme, DEFAULT_CITY_THEME } from '../themes/index.js';
 import { neonStreetDetails } from './neonDistrict.js';
 import { addBuilding } from './buildings.js';
 import { getDistrictStyle, randomFor } from './districtVariants.js';

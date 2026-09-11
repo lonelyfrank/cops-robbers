@@ -402,6 +402,32 @@ lo shader invariato e l'effetto smette di funzionare in silenzio.
 
 ---
 
+## Fase 20 — Temi in moduli separati
+
+**Motivazione.** I due temi vivevano in un solo file insieme al registro e alla rotazione:
+aggiungerne un terzo avrebbe fatto crescere lo stesso modulo.
+
+**Modifiche.**
+
+```
+src/world/themes/
+  shared.js      freezeTheme() e i materiali caldi comuni
+  district87.js  il tema originale
+  neonTokyo.js   facciate in vetro, neon, ramen, giardini sui tetti
+  index.js       registro, elenco tipizzato, tema di default, rotazione per corsa
+```
+
+Aggiungere un tema significa aggiungere un modulo ed elencarlo in `index.js`.
+
+**Preservato.** Rotazione puramente cosmetica, nessun consumo del generatore degli esiti,
+tema fisso per tutta la corsa, materiali e colori configurabili, congelamento profondo
+delle palette. La geometria generata è stata di nuovo confrontata con l'albero
+precedente: **32.656 istanze identiche al bit** su 28 quartieri.
+
+90 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

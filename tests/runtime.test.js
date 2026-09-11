@@ -5,7 +5,7 @@ import { createGameRuntime } from '../src/runtime/GameRuntime.js';
 import { GameState, PHASES } from '../src/core/gameState.js';
 import { MAX_CROSSINGS } from '../src/config/gameplay.js';
 import { getStopX } from '../src/world/mapLayout.js';
-import { getRoundTheme } from '../src/world/cityThemes.js';
+import { getRoundTheme } from '../src/world/themes/index.js';
 
 /**
  * Drive requestAnimationFrame by hand, so a frame time is an input and not a wait.
