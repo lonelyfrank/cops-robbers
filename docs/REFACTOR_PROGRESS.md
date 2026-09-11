@@ -428,6 +428,35 @@ precedente: **32.656 istanze identiche al bit** su 28 quartieri.
 
 ---
 
+## Fase 21 — Generazione deterministica formalizzata
+
+**Motivazione.** Il generatore della città era una funzione privata di
+`districtGeometry.js` con due semi calcolati a mano (`index` e `index + 503`): un
+meccanismo importante nascosto in un dettaglio di implementazione.
+
+**Modifiche.**
+
+- `src/world/seededRandom.js`: `createSeededRandom(seed)` — LCG a 32 bit, senza
+  allocazioni, stesso flusso su ogni piattaforma — e `createDistrictRandom(index, offset)`
+  che applica base e passo dei semi dei quartieri.
+- `DISTRICT_SEED_BASE` è esplicito; lo stream separato dell'architettura è documentato
+  come tale invece di essere un `+ 503` inline.
+
+**Confine fra i generatori.** Il modulo dichiara in testa che questo è **solo** RNG
+cosmetico: gli esiti restano su `crypto.getRandomValues()` dentro `GameState` e i due non
+si incontrano mai. È la condizione che rende possibili, in futuro, seme della corsa,
+replay, screenshot di regressione e riproduzione dei bug senza toccare le probabilità.
+
+**Test.** `tests/seededRandom.test.js`: stesso seme → stesso flusso, semi diversi →
+flussi diversi, un stream distinto per quartiere, stream dell'architettura indipendente
+da quello della fondazione, stile riproducibile per indice e — la verifica che conta —
+costruire l'intera città non consuma **nessun** campione del generatore di gioco.
+
+La geometria è stata riconfrontata con l'albero precedente: **32.656 istanze identiche al
+bit**. 93 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

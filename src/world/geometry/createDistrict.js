@@ -5,7 +5,8 @@ import { MAIN_ROAD_Z } from '../mapLayout.js';
 import { getCityTheme, DEFAULT_CITY_THEME } from '../themes/index.js';
 import { neonStreetDetails } from './neonDistrict.js';
 import { addBuilding } from './buildings.js';
-import { getDistrictStyle, randomFor } from './districtVariants.js';
+import { getDistrictStyle } from './districtVariants.js';
+import { createDistrictRandom } from '../seededRandom.js';
 import { buildFoundation, paveAlleys } from './streets.js';
 import { createTrafficLight } from './trafficLights.js';
 import {
@@ -38,7 +39,7 @@ export function buildDistrictGeometry(
   themeId = DEFAULT_CITY_THEME,
 ) {
   const theme = getCityTheme(themeId);
-  const random = randomFor(index);
+  const random = createDistrictRandom(index);
   const style = getDistrictStyle(index, theme.id);
   /** @type {THREE.Sprite[]} */
   const halos = [];

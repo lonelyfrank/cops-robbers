@@ -1,4 +1,5 @@
 import { getCityTheme, DEFAULT_CITY_THEME } from '../themes/index.js';
+import { createDistrictRandom } from '../seededRandom.js';
 
 /**
  * Deterministic per-district architecture. Cosmetic only: it never feeds the wager RNG.
@@ -23,29 +24,14 @@ import { getCityTheme, DEFAULT_CITY_THEME } from '../themes/index.js';
  */
 
 /**
- * Deterministic per-district generator.
- *
- * Cosmetic only: it is seeded by the district index and never touches the wager RNG.
- *
- * @param {number} index
- * @returns {() => number}
- */
-export function randomFor(index) {
-  let seed = (70241 + index * 98711) | 0;
-  return () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
-    return (seed >>> 0) / 4294967296;
-  };
-}
-
-/**
  * @param {number} index
  * @param {import('../../core/types.js').CityThemeId} [themeId]
  * @returns {DistrictStyle}
  */
 export function getDistrictStyle(index, themeId = DEFAULT_CITY_THEME) {
   const theme = getCityTheme(themeId);
-  const random = randomFor(index + 503);
+  // A stream of its own, so changing the foundation cannot reshuffle the architecture.
+  const random = createDistrictRandom(index, 503);
   const palettes = [
     [0x966b55, 0xa45f49, 0x86624e],
     [0x8a8d9c, 0x82716a, 0x6c7e94],
