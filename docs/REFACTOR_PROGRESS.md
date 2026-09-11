@@ -112,6 +112,30 @@ classificazione degli errori. 67 test verdi.
 
 ---
 
+## Fase 4 — Identità del progetto
+
+**Motivazione.** Il titolo pubblico è **Cops&Robbers**, ma il nome npm e l'artefatto
+distribuito conservavano ancora il nome storico.
+
+**Modifiche.**
+
+- `package.json`: `cops-and-robbers` → `cops-and-robbers`, descrizione allineata.
+  Lockfile rigenerato.
+- `cops-and-robbers.html` → `cops-and-robbers.html`, con `git mv`. Aggiornati lo script
+  di build, il controllo CI `git diff --exit-code`, `.prettierignore` e il README.
+- Messaggio di console: `Cops&Robbers:` → `Cops&Robbers:`.
+- Il `<title>` della pagina era già corretto.
+
+**Decisione architetturale.** Nessun alias legacy sul disco. Mantenere una copia del
+vecchio nome duplicherebbe un artefatto generato da 770 KiB nel repository; la cronologia
+Git conserva comunque il percorso precedente. Il README segnala il rinomino a chi avesse
+salvato il vecchio collegamento.
+
+**Breaking change.** Chi distribuiva il link diretto a `cops-and-robbers.html` deve
+aggiornarlo.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una
