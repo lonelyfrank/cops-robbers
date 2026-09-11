@@ -2,12 +2,15 @@ import * as THREE from 'three';
 import { createTrafficCar, isInstancedMesh, material } from '../rendering/voxelModels.js';
 import { MAIN_ROAD_Z, TILE_SIZE } from './mapLayout.js';
 import { smoothStep } from './cityEffects.js';
+import { applyShaderPatches } from '../rendering/shaderPatch.js';
 
 const STOP_LINE = -5.8;
 const LOOP_HALF = 18;
 const COLORS = [0xcda949, 0x607f9d, 0xa75b53, 0xc3c9cc, 0x548676];
 // Include the full bumper: cars finish fading while still supported by the road.
 const VISIBLE_EDGE = TILE_SIZE / 2 - 1.51 - 0.08;
+/** Name reported if Three.js stops providing one of the depth chunks this patch needs. */
+const SHADOW_FADE = 'traffic shadow fade';
 
 /** One car per direction, recycled outside the diorama. No traffic can enter on red. */
 export class IntersectionTraffic {
@@ -37,19 +40,22 @@ export class IntersectionTraffic {
         depthPacking: THREE.RGBADepthPacking,
         alphaHash: true,
       });
-      // Packed shadow depth ignores material.opacity, so supply it to alpha hashing explicitly.
+      // Packed shadow depth ignores material.opacity, so supply it to alpha hashing
+      // explicitly. Upgrade-sensitive: the guard reports a chunk that no longer exists
+      // instead of leaving the shadows opaque while the car fades out.
       depthMaterial.onBeforeCompile = (shader) => {
         shader.uniforms.trafficOpacity = {
           get value() {
             return depthMaterial.opacity;
           },
         };
-        shader.fragmentShader = shader.fragmentShader
-          .replace('#include <common>', '#include <common>\nuniform float trafficOpacity;')
-          .replace(
+        shader.fragmentShader = applyShaderPatches(shader.fragmentShader, SHADOW_FADE, [
+          ['#include <common>', '#include <common>\nuniform float trafficOpacity;'],
+          [
             'vec4 diffuseColor = vec4( 1.0 );',
             'vec4 diffuseColor = vec4(1.0, 1.0, 1.0, trafficOpacity);',
-          );
+          ],
+        ]);
       };
       depthMaterial.customProgramCacheKey = () => 'traffic-shadow-fade-v1';
       root.traverse((object) => {

@@ -371,6 +371,37 @@ posizioni degli aloni e descrittori dei semafori: **32.656 istanze identiche al 
 
 ---
 
+## Fase 19 — Patch agli shader Three.js con guardia
+
+**Motivazione.** Due effetti modificano gli shader di Three.js tramite `onBeforeCompile`
+e sostituzione di stringhe: il gradiente luminoso della città in `cityEffects.js` e la
+dissolvenza delle ombre del traffico in `TrafficController.js`. Se un aggiornamento di
+Three.js rinomina o riordina un chunk, la `String.replace` **non fallisce**: restituisce
+lo shader invariato e l'effetto smette di funzionare in silenzio.
+
+**Modifiche.**
+
+- `src/rendering/shaderPatch.js`: `replaceShaderChunk()` e `applyShaderPatches()`
+  verificano che il marcatore esista. In sviluppo (`import.meta.env.DEV`) lanciano;
+  altrove riportano su `console.error` e restituiscono il sorgente intatto, così una
+  versione incompatibile degrada invece di lasciare la pagina bianca.
+- `SHADER_MARKERS` elenca i marcatori usati dal progetto, raggruppati per shader.
+- Entrambi i moduli sono documentati come **upgrade-sensitive** nel codice.
+- Il pinning di Three.js a `0.180.0` resta invariato, come richiesto.
+
+**Test.** Nuovo `tests/shaderPatch.test.js`:
+
+1. ogni marcatore in `SHADER_MARKERS` esiste ancora in `THREE.ShaderLib` della versione
+   installata — un aggiornamento di Three.js fallisce in CI, non a schermo;
+2. un chunk mancante viene riportato e mai applicato in silenzio, e in modalità stretta
+   lancia;
+3. le patch arrivano davvero allo shader compilato, con le uniform collegate agli oggetti
+   vivi (il fuoco della luce e l'opacità dell'auto), non a copie.
+
+90 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una
