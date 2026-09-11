@@ -1,13 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  MAX_BET,
-  MIN_BET,
-  clampBet,
-  formatBetInput,
-  getBetError,
-  parseBet,
-} from '../src/core/money.js';
+import { clampBet, formatBetInput, getBetError, parseBet } from '../src/core/money.js';
+import { MAX_BET, MIN_BET } from '../src/config/gameplay.js';
 
 test('Credit input accepts Italian decimals and rejects precision loss or invalid strings', () => {
   assert.equal(parseBet('25'), 2500);

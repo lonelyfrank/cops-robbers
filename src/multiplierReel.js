@@ -1,4 +1,5 @@
-import { getMultiplier, MAX_CROSSINGS } from './gameMath.js';
+import { getMultiplier } from './gameMath.js';
+import { MAX_CROSSINGS } from './config/gameplay.js';
 import { formatMultiplier } from './format.js';
 
 export const REEL_DURATION = 550;

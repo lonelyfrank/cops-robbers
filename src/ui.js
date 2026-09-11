@@ -1,14 +1,14 @@
 import {
   DIFFICULTIES,
-  MAX_CROSSINGS,
-  RTP_TARGET,
   getGreenProbability,
   getMultiplier,
   calculatePayout,
   buildRiskTable,
 } from './gameMath.js';
+import { MAX_CROSSINGS, RTP_TARGET } from './config/gameplay.js';
 import { PHASES } from './gameState.js';
-import { clampBet, formatBetInput, getBetError, MIN_BET, parseBet } from './core/money.js';
+import { clampBet, formatBetInput, getBetError, parseBet } from './core/money.js';
+import { MIN_BET } from './config/gameplay.js';
 
 import { formatMoney, formatMultiplier, formatPercent } from './format.js';
 import { getRoundTheme } from './cityThemes.js';

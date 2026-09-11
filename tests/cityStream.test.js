@@ -7,7 +7,7 @@ import { getDistrictStyle } from '../src/districtGeometry.js';
 import { CharacterController } from '../src/characterController.js';
 import { isInstancedMesh, unitBox } from '../src/voxelModels.js';
 import { getCityLightLevel } from '../src/cityEffects.js';
-import { MAX_CROSSINGS } from '../src/gameMath.js';
+import { MAX_CROSSINGS } from '../src/config/gameplay.js';
 import {
   getCurrentTile,
   getTileWindow,

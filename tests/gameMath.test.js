@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RTP_TARGET,
   DIFFICULTY_IDS,
-  MAX_CROSSINGS,
-  MIN_GREEN_PROBABILITY,
   getGreenProbability,
   getCumulativeProbability,
   getMultiplier,
@@ -12,6 +9,7 @@ import {
   isGreen,
   buildRiskTable,
 } from '../src/gameMath.js';
+import { MAX_CROSSINGS, MIN_GREEN_PROBABILITY, RTP_TARGET } from '../src/config/gameplay.js';
 
 const close = (a, b, epsilon = 1e-12) =>
   assert.ok(Math.abs(a - b) <= epsilon, `${a} differs from ${b}`);

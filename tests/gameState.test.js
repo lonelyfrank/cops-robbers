@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, PHASES, INITIAL_BALANCE, secureRandom } from '../src/gameState.js';
-import { calculatePayout, MAX_CROSSINGS } from '../src/gameMath.js';
-import { MAX_BET } from '../src/core/money.js';
+import { GameState, PHASES, secureRandom } from '../src/gameState.js';
+import { calculatePayout } from '../src/gameMath.js';
+import { INITIAL_BALANCE, MAX_BET, MAX_CROSSINGS } from '../src/config/gameplay.js';
 
 const resolveGreen = (game) => {
   assert.equal(game.snapshot.phase, PHASES.RUNNING);

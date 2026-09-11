@@ -1,22 +1,31 @@
 /**
  * All probability / payout functions are pure. No Three.js or browser imports.
+ * Every tunable number lives in `config/gameplay.js`; this module only applies them.
  * @typedef {import('./core/types.js').DifficultyId} DifficultyId
  */
-export const RTP_TARGET = 0.96;
-export const INITIAL_GREEN_PROBABILITY = 0.95;
-// Defensive floor for future curve changes; not reached within the current twelve crossings.
-export const MIN_GREEN_PROBABILITY = 0.12;
-export const MAX_CROSSINGS = 12;
+import {
+  DIFFICULTY_DECAY,
+  INITIAL_GREEN_PROBABILITY,
+  MAX_CROSSINGS,
+  MIN_GREEN_PROBABILITY,
+  RTP_TARGET,
+} from './config/gameplay.js';
+
+/** Labels and captions belong to the risk curve, so they sit beside it. */
 export const DIFFICULTIES = Object.freeze({
-  easy: Object.freeze({ label: 'Facile', decay: 0.035, description: 'Il rischio cresce piano.' }),
+  easy: Object.freeze({
+    label: 'Facile',
+    decay: DIFFICULTY_DECAY.easy,
+    description: 'Il rischio cresce piano.',
+  }),
   medium: Object.freeze({
     label: 'Medio',
-    decay: 0.065,
+    decay: DIFFICULTY_DECAY.medium,
     description: 'Più rischio, più moltiplicatore.',
   }),
   hard: Object.freeze({
     label: 'Difficile',
-    decay: 0.1,
+    decay: DIFFICULTY_DECAY.hard,
     description: 'Il rischio cresce in fretta.',
   }),
 });

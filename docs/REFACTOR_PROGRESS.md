@@ -136,6 +136,35 @@ aggiornarlo.
 
 ---
 
+## Fase 5 — Configurazione centralizzata per dominio
+
+**Motivazione.** I numeri regolabili erano sparsi fra le formule (`gameMath`), la macchina
+a stati (`gameState`), il blocco `TUNING` di `sceneManager` e costanti inline nelle
+animazioni.
+
+**Modifiche.** Tre file, uno per dominio — non un unico config gigante.
+
+| File                      | Contenuto                                                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/config/gameplay.js`  | RTP target, probabilità iniziale, pavimento, decadimenti, incroci massimi, saldo iniziale, puntata default e limiti.  |
+| `src/config/rendering.js` | `RENDERER`, `CAMERA`, `LIGHTING`, `CAPTURE`: blocchi separati per i sistemi che la Fase 9 estrarrà da `sceneManager`. |
+| `src/config/animation.js` | `CHARACTER` (durate di corsa, arresto, vicolo) e `CITY` (velocità di comparsa e risposte della luce).                 |
+
+- `gameMath.js` resta formule pure e importa i suoi parametri; conserva `DIFFICULTIES`
+  perché etichette e descrizioni appartengono alla curva di rischio.
+- `core/money.js` importa `MIN_BET` / `MAX_BET` dal config: il modulo resta comportamento,
+  la configurazione resta numeri.
+- Nessun re-export di comodo salvo `INITIAL_BALANCE` da `gameState.js`, che resta parte
+  della sua API pubblica storica.
+- Le durate delle animazioni sono spostate; la _forma_ di una singola coreografia (quando
+  si alzano le mani dentro l'arresto) resta accanto all'animazione, dove si legge come
+  sequenza unica.
+
+**Comportamento preservato.** Tutti i valori sono identici. I 36 casi RTP difficoltà ×
+incrocio continuano a dare `P × M = 0,96`.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

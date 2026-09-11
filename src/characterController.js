@@ -8,6 +8,7 @@ import {
   TILE_SIZE,
   sirenPulse,
 } from './mapLayout.js';
+import { CHARACTER } from './config/animation.js';
 
 const clamp = (value) => Math.max(0, Math.min(1, value));
 const smooth = (value) => {
@@ -75,8 +76,12 @@ export class CharacterController {
     const chaseFromX = this.chase.root.position.x,
       chaseToX = getPursuitStopX(n);
     const duration = this.reducedMotion
-      ? 0.45
-      : Math.max(0.65, Math.abs(toX - fromX) / 19, Math.abs(chaseToX - chaseFromX) / 19);
+      ? CHARACTER.reducedRunDuration
+      : Math.max(
+          CHARACTER.runMinDuration,
+          Math.abs(toX - fromX) / CHARACTER.runSpeed,
+          Math.abs(chaseToX - chaseFromX) / CHARACTER.runSpeed,
+        );
     this.animation = {
       kind: 'run',
       elapsed: 0,
@@ -106,7 +111,7 @@ export class CharacterController {
     this.animation = {
       kind: 'caught',
       elapsed: 0,
-      duration: this.reducedMotion ? 0.85 : 2.2,
+      duration: this.reducedMotion ? CHARACTER.reducedCaughtDuration : CHARACTER.caughtDuration,
       handsFrom: this.thief.arms.map((arm) => arm.rotation.z),
       bodyFrom: this.thief.body.rotation.z,
       crossingX: x,
@@ -121,7 +126,7 @@ export class CharacterController {
     this.animation = {
       kind: 'alley',
       elapsed: 0,
-      duration: this.reducedMotion ? 0.65 : 1.05,
+      duration: this.reducedMotion ? CHARACTER.reducedAlleyDuration : CHARACTER.alleyDuration,
       z: this.thief.root.position.z,
       onComplete,
     };
@@ -138,7 +143,8 @@ export class CharacterController {
   update(dt, elapsed = this.time + dt) {
     this.time = elapsed;
     this.lootScale +=
-      (this.lootTarget - this.lootScale) * (this.reducedMotion ? 1 : 1 - Math.exp(-dt * 7));
+      (this.lootTarget - this.lootScale) *
+      (this.reducedMotion ? 1 : 1 - Math.exp(-dt * CHARACTER.lootResponse));
     this.thief.lootBag.scale.set(this.lootScale, 1 + (this.lootScale - 1) * 0.72, this.lootScale);
     this.chase.blueLight.intensity = 230 * sirenPulse(this.time, this.reducedMotion);
     this.chase.redLight.intensity = 135 * sirenPulse(this.time, this.reducedMotion, Math.PI);

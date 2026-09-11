@@ -1,11 +1,12 @@
+import { DIFFICULTIES, calculatePayout, getMultiplier, isGreen } from './gameMath.js';
 import {
-  DIFFICULTIES,
+  DEFAULT_BET,
+  HISTORY_SIZE,
+  INITIAL_BALANCE,
+  MAX_BET,
   MAX_CROSSINGS,
-  calculatePayout,
-  getMultiplier,
-  isGreen,
-} from './gameMath.js';
-import { MAX_BET, MIN_BET } from './core/money.js';
+  MIN_BET,
+} from './config/gameplay.js';
 
 /**
  * @typedef {import('./core/types.js').GamePhase} GamePhase
@@ -16,7 +17,7 @@ import { MAX_BET, MIN_BET } from './core/money.js';
  * @typedef {Omit<GameSnapshot, 'history'> & { history: GameHistoryEntry[] }} GameData
  */
 
-export const INITIAL_BALANCE = 100_000;
+export { INITIAL_BALANCE } from './config/gameplay.js';
 export const PHASES = Object.freeze({
   IDLE: 'idle',
   RUNNING: 'running',
@@ -46,7 +47,7 @@ export class GameState {
     this.data = {
       phase: PHASES.IDLE,
       balance: initialBalance,
-      bet: 2500,
+      bet: DEFAULT_BET,
       stake: 0,
       difficulty: 'medium',
       crossing: 0,
@@ -186,14 +187,14 @@ export class GameState {
       stake: this.data.stake,
       payout: this.data.payout,
     });
-    this.data.history = this.data.history.slice(0, 8);
+    this.data.history = this.data.history.slice(0, HISTORY_SIZE);
   }
   resetDemo() {
     if (!this.canConfigure) return false;
     Object.assign(this.data, {
       phase: PHASES.IDLE,
       balance: INITIAL_BALANCE,
-      bet: 2500,
+      bet: DEFAULT_BET,
       stake: 0,
       crossing: 0,
       multiplier: 1,

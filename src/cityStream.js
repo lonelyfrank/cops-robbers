@@ -1,8 +1,9 @@
 import { createCityTile, createHaloTexture } from './cityTile.js';
 import { getCurrentTile, getTileWindow, getTileRole, getStopX, getCrossingX } from './mapLayout.js';
-import { MAX_CROSSINGS } from './gameMath.js';
+import { MAX_CROSSINGS } from './config/gameplay.js';
 import { createCityLighting } from './cityEffects.js';
 import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
+import { CITY } from './config/animation.js';
 
 /** Owns precisely three live districts and at most one dissolving old district. */
 export class CityStream {
@@ -98,12 +99,12 @@ export class CityStream {
     const focus = Math.max(0, Math.min(getCrossingX(MAX_CROSSINGS), this.playerX));
     this.lighting.focusX.value +=
       (focus - this.lighting.focusX.value) *
-      (this.reducedMotion ? 1 : 1 - Math.exp(-Math.max(0, dt) * 6));
+      (this.reducedMotion ? 1 : 1 - Math.exp(-Math.max(0, dt) * CITY.focusResponse));
     this.lighting.capture.value +=
       ((this.caught ? 1 : 0) - this.lighting.capture.value) *
-      (this.reducedMotion ? 1 : 1 - Math.exp(-Math.max(0, dt) * 8));
+      (this.reducedMotion ? 1 : 1 - Math.exp(-Math.max(0, dt) * CITY.captureResponse));
     for (const [index, entry] of this.tiles) {
-      const speed = entry.target === 1 ? 1.05 : 1.2;
+      const speed = entry.target === 1 ? CITY.revealSpeed : CITY.retireSpeed;
       const delta = this.reducedMotion ? 1 : Math.max(0, dt) * speed;
       entry.reveal =
         entry.target === 1 ? Math.min(1, entry.reveal + delta) : Math.max(0, entry.reveal - delta);

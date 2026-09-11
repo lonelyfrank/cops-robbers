@@ -1,4 +1,4 @@
-import { MAX_CROSSINGS } from './gameMath.js';
+import { MAX_CROSSINGS } from './config/gameplay.js';
 
 /** @typedef {import('./core/types.js').TileRole} TileRole */
 

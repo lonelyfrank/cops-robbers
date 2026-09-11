@@ -1,108 +1,65 @@
 import * as THREE from 'three';
-import { MAX_CROSSINGS, getMultiplier } from './gameMath.js';
+import { getMultiplier } from './gameMath.js';
+import { MAX_CROSSINGS } from './config/gameplay.js';
 import { formatMultiplier } from './format.js';
 import { CityStream } from './cityStream.js';
 import { retainVoxelAssets } from './voxelModels.js';
 import { getCrossingX, getStopX, MAIN_ROAD_Z, sirenPulse } from './mapLayout.js';
-
-const TUNING = Object.freeze({
-  pixelRatio: 1.6,
-  exposure: 1.24,
-  background: 0x06132c,
-  fogDensity: 0.0065,
-  cameraOffset: Object.freeze([-29, 33, 37]),
-  cameraResponse: 7.5,
-  focusAhead: 4.7,
-  captureZoom: 1.08,
-  monitorViewHeight: 31,
-  monitorMinViewWidth: 30,
-  ambientSky: 0x779edc,
-  ambientGround: 0x161e36,
-  ambientPower: 0.56,
-  rimColor: 0x809edb,
-  rimPower: 0.3,
-  keyColor: 0xffd5a5,
-  keyPower: 1950,
-  keyRange: 65,
-  keyAngle: 0.9,
-  captureDimming: 0.85,
-  shadowSize: 1024,
-  shadowFar: 70,
-  shadowNormalBias: 0.055,
-  shadowBias: -0.00008,
-  warmColor: 0xffb458,
-  warmPower: 26,
-  warmRange: 11,
-  warmHeight: 2.9,
-  warmOffsets: Object.freeze([
-    Object.freeze([-7, -1.3]),
-    Object.freeze([7, -0.5]),
-    Object.freeze([-6, MAIN_ROAD_Z + 3.3]),
-    Object.freeze([6, MAIN_ROAD_Z + 3.3]),
-  ]),
-  signalPower: 13,
-  signalRange: 9,
-  captureColor: 0x286bff,
-  captureRange: 23,
-  capturePower: Object.freeze([340, 225]),
-  flashBase: 0.035,
-  flashPower: 0.22,
-  reducedFlash: 0.09,
-});
+import { CAMERA, CAPTURE, LIGHTING, RENDERER } from './config/rendering.js';
 
 export function createSceneManager(canvas, container, { motion = { reduced: false } } = {}) {
   let disposed = false;
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: RENDERER.antialias,
     alpha: false,
     powerPreference: 'high-performance',
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, TUNING.pixelRatio));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, RENDERER.pixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = TUNING.exposure;
-  renderer.shadowMap.enabled = true;
+  renderer.toneMappingExposure = RENDERER.exposure;
+  renderer.shadowMap.enabled = RENDERER.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const releaseVoxelAssets = retainVoxelAssets();
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(TUNING.background);
-  scene.fog = new THREE.FogExp2(TUNING.background, TUNING.fogDensity);
+  scene.background = new THREE.Color(RENDERER.background);
+  scene.fog = new THREE.FogExp2(RENDERER.background, RENDERER.fogDensity);
   const camera = new THREE.OrthographicCamera(-40, 40, 20, -20, 0.1, 190);
   const focus = new THREE.Vector3(0, 1.1, 1.1),
-    cameraOffset = new THREE.Vector3(...TUNING.cameraOffset);
+    cameraOffset = new THREE.Vector3(...CAMERA.offset);
   // Cool ambient light keeps adjacent streets readable; the warm key marks the active district.
   scene.add(
-    new THREE.HemisphereLight(TUNING.ambientSky, TUNING.ambientGround, TUNING.ambientPower),
+    new THREE.HemisphereLight(LIGHTING.ambientSky, LIGHTING.ambientGround, LIGHTING.ambientPower),
   );
-  const rim = new THREE.DirectionalLight(TUNING.rimColor, TUNING.rimPower);
+  const rim = new THREE.DirectionalLight(LIGHTING.rimColor, LIGHTING.rimPower);
   rim.position.set(4, 18, -12);
   scene.add(rim);
   // One warm key for the occupied tile. All other lights are fixed, reused pools.
   const key = new THREE.SpotLight(
-    TUNING.keyColor,
-    TUNING.keyPower,
-    TUNING.keyRange,
-    TUNING.keyAngle,
+    LIGHTING.keyColor,
+    LIGHTING.keyPower,
+    LIGHTING.keyRange,
+    LIGHTING.keyAngle,
     1,
     2,
   );
   key.castShadow = true;
-  key.shadow.mapSize.set(TUNING.shadowSize, TUNING.shadowSize);
+  key.shadow.mapSize.set(LIGHTING.shadowSize, LIGHTING.shadowSize);
   key.shadow.camera.near = 2;
-  key.shadow.camera.far = TUNING.shadowFar;
-  key.shadow.normalBias = TUNING.shadowNormalBias;
-  key.shadow.bias = TUNING.shadowBias;
+  key.shadow.camera.far = LIGHTING.shadowFar;
+  key.shadow.normalBias = LIGHTING.shadowNormalBias;
+  key.shadow.bias = LIGHTING.shadowBias;
   scene.add(key, key.target);
   const warmLights = Array.from({ length: 4 }, () => {
-    const light = new THREE.PointLight(TUNING.warmColor, 0, TUNING.warmRange, 2);
+    const light = new THREE.PointLight(LIGHTING.warmColor, 0, LIGHTING.warmRange, 2);
     scene.add(light);
     return light;
   });
-  const signalLight = new THREE.PointLight(0xffba39, 0, TUNING.signalRange, 2);
+  const signalLight = new THREE.PointLight(0xffba39, 0, LIGHTING.signalRange, 2);
   scene.add(signalLight);
   const captureLights = Array.from({ length: 2 }, () => {
-    const light = new THREE.PointLight(TUNING.captureColor, 0, TUNING.captureRange, 2);
+    const light = new THREE.PointLight(CAPTURE.color, 0, CAPTURE.range, 2);
     scene.add(light);
     return light;
   });
@@ -154,7 +111,7 @@ export function createSceneManager(canvas, container, { motion = { reduced: fals
     height = Math.max(1, container.clientHeight);
     const aspect = width / height,
       // A tighter crop fills the CCTV monitor while retaining the isometric camera angle.
-      viewHeight = Math.max(TUNING.monitorViewHeight, TUNING.monitorMinViewWidth / aspect);
+      viewHeight = Math.max(CAMERA.monitorViewHeight, CAMERA.monitorMinViewWidth / aspect);
     camera.left = (-viewHeight * aspect) / 2;
     camera.right = (viewHeight * aspect) / 2;
     camera.top = viewHeight / 2;
@@ -221,11 +178,11 @@ export function createSceneManager(canvas, container, { motion = { reduced: fals
       lightX = stream.lighting.focusX.value,
       capture = stream.lighting.capture.value;
     // Camera movement is continuous; district roles change at the road connector.
-    const factor = reducedMotion ? 1 : 1 - Math.exp(-dt * TUNING.cameraResponse);
+    const factor = reducedMotion ? 1 : 1 - Math.exp(-dt * CAMERA.response);
     focus.x +=
-      ((stream.caught && thief ? thief.position.x : followX) + TUNING.focusAhead - focus.x) *
+      ((stream.caught && thief ? thief.position.x : followX) + CAMERA.focusAhead - focus.x) *
       factor;
-    const zoomTarget = stream.caught && !reducedMotion ? TUNING.captureZoom : 1;
+    const zoomTarget = stream.caught && !reducedMotion ? CAMERA.captureZoom : 1;
     const zoom = camera.zoom + (zoomTarget - camera.zoom) * factor;
     if (Math.abs(zoom - camera.zoom) > 0.00001) {
       camera.zoom = zoom;
@@ -236,32 +193,34 @@ export function createSceneManager(canvas, container, { motion = { reduced: fals
     camera.updateMatrixWorld();
     key.position.set(lightX - 3, 23, 1);
     key.target.position.set(lightX, 0, 0);
-    key.intensity = stream.theme.keyPower * (1 - TUNING.captureDimming * capture);
-    const offsets = TUNING.warmOffsets;
+    key.intensity = stream.theme.keyPower * (1 - CAPTURE.dimming * capture);
+    const offsets = LIGHTING.warmOffsets;
     for (let i = 0; i < warmLights.length; i++) {
       warmLights[i].position.set(
         lightX + offsets[i][0],
-        stream.theme.fillHeight ?? TUNING.warmHeight,
+        stream.theme.fillHeight ?? LIGHTING.warmHeight,
         offsets[i][1],
       );
       warmLights[i].intensity =
-        (stream.theme.fillPower ?? TUNING.warmPower) * (1 - TUNING.captureDimming * capture);
+        (stream.theme.fillPower ?? LIGHTING.warmPower) * (1 - CAPTURE.dimming * capture);
     }
     const signal = stream.activeTile.signal;
     signalLight.position.set(occupiedX + 3.72, 2.8, MAIN_ROAD_Z - 3.1);
     signalLight.color.set(signal === 'green' ? 0x8bff7e : signal === 'red' ? 0xff365b : 0xffbd3f);
-    signalLight.intensity = signal === 'off' ? 0 : TUNING.signalPower;
+    signalLight.intensity = signal === 'off' ? 0 : LIGHTING.signalPower;
     const caught = stream.caught;
     const pulse = sirenPulse(elapsed, reducedMotion);
     captureLights[0].position.set(occupiedX - 5, 3.5, MAIN_ROAD_Z - 1);
     captureLights[1].position.set(occupiedX + 4, 4, MAIN_ROAD_Z + 2);
-    captureLights[0].intensity = caught ? TUNING.capturePower[0] * pulse : 0;
+    captureLights[0].intensity = caught ? CAPTURE.power[0] * pulse : 0;
     captureLights[1].intensity = caught
-      ? TUNING.capturePower[1] * sirenPulse(elapsed, reducedMotion, 1)
+      ? CAPTURE.power[1] * sirenPulse(elapsed, reducedMotion, 1)
       : 0;
     if (flash)
       flash.style.opacity = caught
-        ? String(reducedMotion ? TUNING.reducedFlash : TUNING.flashBase + pulse * TUNING.flashPower)
+        ? String(
+            reducedMotion ? CAPTURE.reducedFlash : CAPTURE.flashBase + pulse * CAPTURE.flashPower,
+          )
         : '0';
     if (thief) {
       indicator.visible = thief.visible && thief.position.y < 1.5;

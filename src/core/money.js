@@ -5,10 +5,7 @@
  * Every amount is an integer number of hundredths of a credit (minor units).
  */
 
-/** Minimum accepted stake: 1,00 CR. */
-export const MIN_BET = 100;
-/** Theoretical maximum stake: 1.000.000,00 CR, further limited by the balance. */
-export const MAX_BET = 100_000_000;
+import { MAX_BET, MIN_BET } from '../config/gameplay.js';
 
 /**
  * Why a stake cannot be accepted. The caller owns the wording.
