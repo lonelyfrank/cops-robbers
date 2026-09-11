@@ -5,6 +5,7 @@ import {
   getMultiplier,
   isGreen,
 } from './gameMath.js';
+import { MAX_BET, MIN_BET } from './core/money.js';
 
 /**
  * @typedef {import('./core/types.js').GamePhase} GamePhase
@@ -16,8 +17,6 @@ import {
  */
 
 export const INITIAL_BALANCE = 100_000;
-export const MIN_BET = 100;
-export const MAX_BET = 100_000_000;
 export const PHASES = Object.freeze({
   IDLE: 'idle',
   RUNNING: 'running',

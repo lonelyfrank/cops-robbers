@@ -34,8 +34,8 @@ build di produzione e HTML autonomo rigenerati senza differenze.
 
 **Errori reali corretti.**
 
-| File                | Problema                                                                                        |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
+| File                | Problema                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
 | `src/bootScreen.js` | gli handle dei timer sono ora inizializzati: `hide()` è chiamabile prima che l'intervallo parta. |
 | `src/main.js`       | l'executor della promise restituiva l'id di `setTimeout`.                                        |
 | `src/ui.js`         | inizializzatore morto su `status` in `renderStatus`.                                             |
@@ -81,6 +81,34 @@ di dominio.
 
 **Verifica.** `format:check`, `lint`, `typecheck`, 64 test, build e HTML autonomo: verdi.
 L'HTML autonomo è stato rigenerato e committato.
+
+---
+
+## Fase 3 — Utilità pure fuori dalla UI
+
+**Motivazione.** `parseBet()` viveva in `src/ui.js`: per provare una funzione pura i test
+Node dovevano importare il modulo dell'interfaccia.
+
+**Modifiche.**
+
+- Nuovo `src/core/money.js`, puro: `parseBet`, `formatBetInput`, `clampBet`,
+  `getBetError`, più `MIN_BET` e `MAX_BET`, spostati da `gameState.js` perché sono regole
+  sul denaro e non sulla macchina a stati. Nessun re-export di compatibilità: gli
+  importatori sono aggiornati.
+- `ui.js` conserva solo i testi. `getBetError()` restituisce un codice
+  (`invalid`, `below-minimum`, `insufficient`, `above-maximum`) e la mappa `BET_ERRORS`
+  nella UI lo traduce. La classificazione diventa provabile senza DOM.
+- `formatBetInput()` sostituisce le tre ripetizioni di
+  `(amount / 100).toFixed(2).replace('.', ',')` e `clampBet()` la formula di limite dei
+  tasti ½ / 2× / MAX.
+
+**Comportamento preservato.** Il parsing italiano è identico, carattere per carattere:
+`25`, `1,25`, `1.000,00`, `1.234,50`, `1.000.000,00` e tutti i casi invalidi già coperti.
+Il campo puntata continua a non usare il separatore delle migliaia.
+
+**Test.** Il test del parsing si sposta da `tests/gameState.test.js` a
+`tests/money.test.js`, dove si aggiungono round-trip del formatter, limiti del clamp e
+classificazione degli errori. 67 test verdi.
 
 ---
 

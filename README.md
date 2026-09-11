@@ -115,7 +115,7 @@ P(n, d) × M_totale(n, d) = 0.96
 | Pavimento difensivo della probabilità  | `0.12`                   | `MIN_GREEN_PROBABILITY`, `gameMath.js`     |
 | Incroci massimi                        | `12`                     | `MAX_CROSSINGS`, `gameMath.js`             |
 | Saldo iniziale                         | `100000` centesimi di CR | `INITIAL_BALANCE`, `gameState.js`          |
-| Puntata minima / massima               | `1 / 1000000 CR`         | `MIN_BET` / `MAX_BET`, `gameState.js`      |
+| Puntata minima / massima               | `1 / 1000000 CR`         | `MIN_BET` / `MAX_BET`, `core/money.js`     |
 
 Il pavimento `MIN_GREEN_PROBABILITY = 0.12` è una guardia difensiva per future curve: nel percorso attuale non interviene; la probabilità più bassa è circa 0,316 (difficile, dodicesimo incrocio).
 
@@ -133,6 +133,8 @@ Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni 
 
 | File                          | Responsabilità                                                                                                                            |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/core/money.js`           | Parsing dei crediti all'italiana, limiti della puntata, clamp e classificazione degli errori. Modulo puro.                                |
+| `src/core/types.js`           | Vocabolario di dominio in JSDoc per il controllo dei tipi; nessun codice a runtime.                                                       |
 | `src/gameMath.js`             | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio.                                                |
 | `src/gameState.js`            | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico.                                                            |
 | `src/sceneManager.js`         | Renderer WebGL, camera isometrica, illuminazione del modulo occupato, riflesso blu e moltiplicatore sull'asfalto tra le strisce pedonali. |

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, PHASES, INITIAL_BALANCE, MAX_BET, secureRandom } from '../src/gameState.js';
+import { GameState, PHASES, INITIAL_BALANCE, secureRandom } from '../src/gameState.js';
 import { calculatePayout, MAX_CROSSINGS } from '../src/gameMath.js';
-import { parseBet } from '../src/ui.js';
+import { MAX_BET } from '../src/core/money.js';
 
 const resolveGreen = (game) => {
   assert.equal(game.snapshot.phase, PHASES.RUNNING);
@@ -192,20 +192,6 @@ test('An immediate red blocks repeated clicks and records only one loss', () => 
   assert.equal(g.finishCaught(), false);
   assert.equal(g.snapshot.history.length, 1);
   assert.deepEqual(phases, [PHASES.IDLE, PHASES.CAUGHT, PHASES.RESULT]);
-});
-
-test('Credit input accepts Italian decimals and rejects precision loss or invalid strings', () => {
-  assert.equal(parseBet('25'), 2500);
-  assert.equal(parseBet('1,25'), 125);
-  assert.equal(parseBet(' 25.01 '), 2501);
-  // A decimal comma disambiguates the dots, so the grouped amounts the interface itself
-  // prints (balance 1.000,00; the maximum quoted as 1.000.000,00) can be pasted back in.
-  assert.equal(parseBet('1.000,00'), 100000);
-  assert.equal(parseBet('1.234,50'), 123450);
-  assert.equal(parseBet('1.000.000,00'), 100000000);
-  // Without that comma a lone dot stays ambiguous and is still refused.
-  for (const text of ['', 'abc', '-25', '1e3', '1.234', 'Infinity', '9007199254740993'])
-    assert.equal(parseBet(text), null);
 });
 
 test('The production random generator returns finite numbers in [0, 1)', () => {

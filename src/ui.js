@@ -7,20 +7,20 @@ import {
   calculatePayout,
   buildRiskTable,
 } from './gameMath.js';
-import { PHASES, MIN_BET, MAX_BET } from './gameState.js';
+import { PHASES } from './gameState.js';
+import { clampBet, formatBetInput, getBetError, MIN_BET, parseBet } from './core/money.js';
 
 import { formatMoney, formatMultiplier, formatPercent } from './format.js';
 import { getRoundTheme } from './cityThemes.js';
 import { createMultiplierReel, getReelValues } from './multiplierReel.js';
 
-export function parseBet(text) {
-  const raw = String(text).trim();
-  // it-IT writes 1.000,00: a decimal comma makes every preceding dot a thousands group.
-  const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
-  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
-  const minor = Math.round(Number(normalized) * 100);
-  return Number.isSafeInteger(minor) ? minor : null;
-}
+/** Wording for each rejection reason; the classification itself is pure. */
+const BET_ERRORS = Object.freeze({
+  invalid: 'Inserisci una puntata con al massimo 2 decimali.',
+  'below-minimum': 'Puntata minima: 1,00 CR.',
+  insufficient: 'Crediti insufficienti. Riduci la puntata o ripristina la demo.',
+  'above-maximum': 'Puntata massima: 1.000.000,00 CR.',
+});
 
 export function createUI(game, actions, { motion = { reduced: false } } = {}) {
   const dom = Object.freeze(
@@ -128,19 +128,13 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
     return { item, number, multi };
   });
   function validateBet(showError = false) {
-    const s = game.snapshot,
-      value = parseBet(input.value);
-    let error = '';
-    if (value === null) error = 'Inserisci una puntata con al massimo 2 decimali.';
-    else if (value < MIN_BET) error = 'Puntata minima: 1,00 CR.';
-    else if (value > s.balance)
-      error = 'Crediti insufficienti. Riduci la puntata o ripristina la demo.';
-    else if (value > MAX_BET) error = 'Puntata massima: 1.000.000,00 CR.';
+    const value = parseBet(input.value);
+    const reason = getBetError(value, game.snapshot.balance);
     if (showError) {
-      dom['bet-error'].textContent = error;
-      input.setAttribute('aria-invalid', String(Boolean(error)));
+      dom['bet-error'].textContent = reason ? BET_ERRORS[reason] : '';
+      input.setAttribute('aria-invalid', String(Boolean(reason)));
     }
-    return error ? null : value;
+    return reason ? null : value;
   }
   function openRules() {
     const s = game.snapshot;
@@ -186,7 +180,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
   });
   on(input, 'blur', () => {
     const amount = validateBet(true);
-    if (amount !== null) input.value = (amount / 100).toFixed(2).replace('.', ',');
+    if (amount !== null) input.value = formatBetInput(amount);
   });
   for (const button of betButtons)
     on(button, 'click', () => {
@@ -199,8 +193,8 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
           : button.dataset.bet === 'double'
             ? current * 2
             : s.balance;
-      const amount = Math.min(Math.max(MIN_BET, requested), s.balance, MAX_BET);
-      input.value = (amount / 100).toFixed(2).replace('.', ',');
+      const amount = clampBet(requested, s.balance);
+      input.value = formatBetInput(amount);
       validateBet(true);
       if (!game.setBet(amount)) render(game.snapshot);
     });
