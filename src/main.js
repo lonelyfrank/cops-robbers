@@ -4,10 +4,10 @@ import { GameState, PHASES } from './gameState.js';
 import { createSceneManager } from './sceneManager.js';
 import { getStopX } from './mapLayout.js';
 import { CharacterController } from './characterController.js';
-import { createUI } from './ui.js';
+import { createUI } from './ui/createUI.js';
 import { createMotionPreference } from './motionPreference.js';
 import { getRoundTheme } from './cityThemes.js';
-import { createBootScreen } from './bootScreen.js';
+import { createBootScreen } from './ui/bootScreen.js';
 
 const game = new GameState();
 const motion = createMotionPreference(),

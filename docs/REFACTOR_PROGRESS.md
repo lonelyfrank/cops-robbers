@@ -165,6 +165,60 @@ incrocio continuano a dare `P × M = 0,96`.
 
 ---
 
+## Fase 6 — La UI non è più un monolite
+
+**Motivazione.** `src/ui.js` contava 479 righe e teneva insieme lookup del DOM, orologio,
+percorso, validazione della puntata, difficoltà, azioni, sei funzioni di render, dialogo
+delle regole e messaggio di errore.
+
+**Struttura.** Nessun framework, nessun virtual DOM: componenti come funzioni che
+possiedono i propri elementi, i propri listener e la propria memoizzazione.
+
+```
+src/ui/
+  createUI.js      composition root: azioni, vista, distribuzione dello snapshot
+  dom.js           lookup tipizzati e un solo ambito di listener annullabile
+  view.js          derivazione pura della vista (nessun DOM)
+  labels.js        testi italiani e regole pure di messaggio
+  bootScreen.js    (spostato da src/)
+  components/      surveillanceHud, betControls, difficultySelector, gateMeter,
+                   actionBar, routeDisplay, resultBanner, statusLine, historyList,
+                   rulesDialog, errorOverlay, multiplierReel (spostato da src/)
+```
+
+Il file più grande è ora `createUI.js` con 113 righe; la mediana dei componenti è 56.
+
+**Vincoli rispettati.** DOM vanilla, `AbortController` per tutti i listener, stato dei
+pulsanti, `aria-pressed`, `aria-invalid`, regione live dello stato, `role="meter"` del
+varco, navigazione da tastiera, touch, movimento ridotto (scorrimento della striscia CAM
+e rullo), layout desktop e mobile, CCTV, rullo del moltiplicatore, storico, dialogo delle
+regole e validazione della puntata.
+
+**Decisioni architetturali.**
+
+- `deriveView()` è puro e riceve i marker del render precedente, invece di leggere
+  variabili condivise: le regole di presentazione diventano provabili.
+- Il testo vive in `labels.js`; `getStatusMessage()` e `getActionLabels()` sono funzioni
+  pure. I componenti si occupano di layout e stato.
+- La composition root possiede solo le azioni di gioco (invio del form, incasso,
+  ripristino). I widget locali restano nei loro componenti.
+- `dispose()` resta idempotente: il rimontaggio HMR non duplica listener né timer.
+
+**Test.** Nuovo `tests/ui.test.js` con `tests/helpers/domHarness.js`: monta il **vero**
+`index.html` in jsdom e verifica stato iniziale, blocco fino a scena pronta, validazione
+della puntata con i quattro messaggi, scorciatoie ½ / 2× / MAX, selezione della
+difficoltà, corsa verde, incasso, arresto, dialogo delle regole, ripristino, errore WebGL
+fatale e rilascio dei listener dopo `dispose()`.
+
+Scelta del runner: **jsdom sul runner nativo di Node**, non Vitest. Il progetto ha già un
+runner e aggiungerne un secondo avrebbe introdotto una seconda configurazione senza
+vantaggi. jsdom 30 non implementa `Element.animate`, `Element.scrollTo`, `dialog.showModal`
+né `matchMedia`: l'harness li sostituisce con i minimi stub documentati.
+
+76 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

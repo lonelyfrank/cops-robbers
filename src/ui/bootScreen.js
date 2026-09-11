@@ -1,5 +1,5 @@
 /** A short presentation bar; 100% is reached only after the scene has rendered. */
-/** @param {{ motion: import('./core/types.js').MotionPreference }} options */
+/** @param {{ motion: import('../core/types.js').MotionPreference }} options */
 export function createBootScreen({ motion }) {
   const screen = document.getElementById('boot-screen'),
     app = document.getElementById('app');

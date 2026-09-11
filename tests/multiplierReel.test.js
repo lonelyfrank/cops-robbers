@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getReelValues } from '../src/multiplierReel.js';
+import { getReelValues } from '../src/ui/components/multiplierReel.js';
 import { GameState } from '../src/gameState.js';
 import { getMultiplier } from '../src/gameMath.js';
 

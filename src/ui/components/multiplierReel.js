@@ -1,6 +1,6 @@
-import { getMultiplier } from './gameMath.js';
-import { MAX_CROSSINGS } from './config/gameplay.js';
-import { formatMultiplier } from './format.js';
+import { getMultiplier } from '../../gameMath.js';
+import { MAX_CROSSINGS } from '../../config/gameplay.js';
+import { formatMultiplier } from '../../format.js';
 
 export const REEL_DURATION = 550;
 const EASING = 'cubic-bezier(.22,.8,.22,1)';
@@ -14,7 +14,7 @@ const EASING = 'cubic-bezier(.22,.8,.22,1)';
 
 /**
  * Presentation only: a settled result retains the difficulty of the completed round.
- * @param {import('./core/types.js').GameSnapshot} snapshot
+ * @param {import('../../core/types.js').GameSnapshot} snapshot
  * @returns {ReelValues}
  */
 export function getReelValues(snapshot) {
@@ -38,7 +38,7 @@ const pose = (slot) => ({
 /**
  * Three-value CCTV drum. It never delays controls, changes state or consumes randomness.
  * @param {HTMLElement} root
- * @param {{ motion?: import('./core/types.js').MotionPreference }} [options]
+ * @param {{ motion?: import('../../core/types.js').MotionPreference }} [options]
  */
 export function createMultiplierReel(root, { motion = { reduced: false } } = {}) {
   const drum = /** @type {HTMLElement} */ (root.querySelector('.reel-drum'));
