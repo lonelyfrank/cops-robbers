@@ -2,8 +2,13 @@
  * Frame timing and renderer counters, as plain numbers.
  *
  * Pure measurement: no DOM, no rendering. Whoever wants to show the figures reads
- * `sample()`; an adaptive quality controller would read the same numbers and decide from
+ * `sample`; an adaptive quality controller would read the same numbers and decide from
  * measured frame time — never from a user agent string.
+ *
+ * It keeps its own clock on purpose. The simulation clamps a long frame to 0.05 s so a
+ * stall cannot teleport an animation, and reading that clamped delta would report a
+ * healthy 20 FPS on a machine actually drawing three. The panel exists to expose exactly
+ * that case, so it measures wall-clock time instead.
  */
 
 /** Frames averaged before a reading is published. */
@@ -28,11 +33,18 @@ const WINDOW = 30;
  * @param {() => import('three').WebGLRenderer['info']} deps.getInfo
  * @param {() => number} deps.getTileCount
  * @param {() => number} deps.getInstancedMeshCount
+ * @param {() => number} [deps.now] Injectable clock, in milliseconds.
  */
-export function createPerformanceMonitor({ getInfo, getTileCount, getInstancedMeshCount }) {
+export function createPerformanceMonitor({
+  getInfo,
+  getTileCount,
+  getInstancedMeshCount,
+  now = () => performance.now(),
+}) {
   let frames = 0;
   let accumulated = 0;
   let worst = 0;
+  let last = now();
   /** @type {PerformanceSample} */
   let sample = {
     fps: 0,
@@ -52,11 +64,13 @@ export function createPerformanceMonitor({ getInfo, getTileCount, getInstancedMe
       return sample;
     },
     /**
-     * @param {number} dt Seconds of the frame just drawn.
+     * Call once per drawn frame.
      * @returns {boolean} Whether a new reading was published.
      */
-    record(dt) {
-      const ms = dt * 1000;
+    record() {
+      const stamp = now();
+      const ms = stamp - last;
+      last = stamp;
       accumulated += ms;
       worst = Math.max(worst, ms);
       if (++frames < WINDOW) return false;

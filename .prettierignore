@@ -3,3 +3,5 @@ dist/
 cops-and-robbers.html
 PROJECT_MEMORY.local.md
 package-lock.json
+playwright-report/
+test-results/

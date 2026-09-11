@@ -80,9 +80,8 @@ function createDiagnostics(target) {
     getInstancedMeshCount: () => countInstancedMeshes(target.scene),
   });
   return {
-    /** @param {number} dt */
-    record(dt) {
-      if (monitor.record(dt)) panel.render(monitor.sample);
+    record() {
+      if (monitor.record()) panel.render(monitor.sample);
     },
     dispose: () => panel.dispose(),
   };
@@ -108,7 +107,7 @@ async function initialize() {
     const step = diagnostics
       ? (dt, elapsed) => {
           runtime.update(dt, elapsed);
-          diagnostics.record(dt);
+          diagnostics.record();
         }
       : runtime.update;
     loop = createGameLoop(step, {

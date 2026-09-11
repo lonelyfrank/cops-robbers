@@ -7,7 +7,15 @@ import prettier from 'eslint-config-prettier';
  * disables every stylistic rule that would otherwise fight the formatter.
  */
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'coverage/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
+  },
   js.configs.recommended,
   {
     languageOptions: {
@@ -51,6 +59,11 @@ export default [
     files: ['scripts/**/*.{js,mjs}', 'tests/**/*.js', '*.config.js', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
     rules: { 'no-console': 'off' },
+  },
+  {
+    // Playwright specs run in Node, but page.evaluate callbacks run in the browser.
+    files: ['tests/e2e/**/*.js', 'playwright.config.js'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   prettier,
 ];

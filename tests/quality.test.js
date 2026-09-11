@@ -84,26 +84,36 @@ test('A lower preset drops shadows and decorative lights and dims the halos', ()
   stream.dispose();
 });
 
-test('The performance monitor publishes a reading per window and reports the worst frame', () => {
+test('The performance monitor measures wall-clock time, not the clamped simulation step', () => {
   /** @type {any} */
   let info = {
     render: { calls: 12, triangles: 3400 },
     memory: { geometries: 7, textures: 3 },
     programs: [1, 2, 3],
   };
+  let clock = 0;
   const monitor = createPerformanceMonitor({
     getInfo: () => info,
     getTileCount: () => 3,
     getInstancedMeshCount: () => 42,
+    now: () => clock,
   });
 
-  for (let i = 0; i < 29; i++) assert.equal(monitor.record(1 / 60), false);
+  // The simulation would clamp each of these to 50 ms; the panel must not.
+  for (let i = 0; i < 29; i++) {
+    clock += 1000 / 60;
+    assert.equal(monitor.record(), false);
+  }
   assert.equal(monitor.sample.fps, 0, 'nothing is published before the window closes');
-  assert.equal(monitor.record(0.1), true);
+  clock += 400;
+  assert.equal(monitor.record(), true);
 
   const sample = monitor.sample;
-  assert.ok(sample.fps > 40 && sample.fps < 60);
-  assert.ok(Math.abs(sample.worstFrameTime - 100) < 1e-9, 'the stalled frame is reported');
+  assert.ok(sample.fps > 30 && sample.fps < 40, `unexpected fps: ${sample.fps}`);
+  assert.ok(
+    Math.abs(sample.worstFrameTime - 400) < 1e-9,
+    'a 400 ms stall is reported in full, not clamped to the simulation step',
+  );
   assert.equal(sample.calls, 12);
   assert.equal(sample.triangles, 3400);
   assert.equal(sample.geometries, 7);
@@ -114,6 +124,9 @@ test('The performance monitor publishes a reading per window and reports the wor
 
   // A renderer without the programs list still reports the rest.
   info = { render: { calls: 1, triangles: 2 }, memory: { geometries: 1, textures: 1 } };
-  for (let i = 0; i < 30; i++) monitor.record(1 / 60);
+  for (let i = 0; i < 30; i++) {
+    clock += 1000 / 60;
+    monitor.record();
+  }
   assert.equal(monitor.sample.programs, 0);
 });

@@ -542,6 +542,66 @@ diventare server-authoritative. Nessun backend introdotto ora.
 
 ---
 
+## Fase 25 — Playwright
+
+**Fatto.** `npm run test:e2e`, 12 controlli in `tests/e2e/`, verdi:
+
+- avvio su WebGL reale, canvas dimensionato, nessun errore di console, nessun messaggio di
+  fallback;
+- corsa verde che avanza il percorso e abilita l'incasso;
+- incasso con accredito unico e una sola voce nello storico;
+- rosso con arresto, saldo ridotto della sola puntata e tappa segnata;
+- nuova partita dopo il risultato e ripristino della demo;
+- dialogo delle regole con la curva completa;
+- validazione della puntata che blocca la corsa;
+- movimento ridotto che completa comunque una partita intera;
+- rotazione dei temi a ogni corsa accettata;
+- preset di qualità e pannello di diagnostica entrambi opzionali;
+- assenza di overflow orizzontale e controlli dentro il viewport, su desktop **e** su
+  mobile landscape.
+
+**Determinismo senza ganci in produzione.** Gli esiti vengono fissati sostituendo
+`crypto.getRandomValues` con `addInitScript`, prima che qualunque script del gioco parta.
+Il codice distribuito non contiene alcun gancio di test.
+
+**Il costo, misurato.** Senza GPU Chromium rasterizza via software: il pannello di
+diagnostica riporta **2 FPS**, con tempo di frame di circa 500 ms e picchi oltre 1,2 s,
+sostanzialmente indipendenti da viewport e preset. Poiché il ciclo clampa un frame a
+0,05 s, il tempo reale avanza circa **dieci volte** più in fretta dell'animazione: un
+arresto da 2,2 s richiede oltre venti secondi di orologio. I timeout sono dimensionati su
+questo (45 s per asserzione) e la suite dura circa **6 minuti**. Gira con **un solo
+worker**: più contesti WebGL software in parallelo fanno cadere la sessione del browser.
+
+Per questo è un comando e un **job CI separato**: i controlli veloci (`format:check`,
+`lint`, `typecheck`, `test`, build) restano in pochi secondi.
+
+**Difetto reale trovato da questa fase.** Il `PerformanceMonitor` della fase 17 misurava
+il delta **già clampato** e riportava 21 FPS su una macchina che ne faceva 2: esattamente
+il caso che il pannello esiste per rivelare. Ora tiene un proprio orologio e misura tempo
+reale; il test è stato riscritto attorno a questo, con un'attesa di 400 ms che deve essere
+riportata intera e non troncata a 50 ms.
+
+---
+
+## Fase 26 — Regressione visiva: **non fatta**, e perché
+
+Le fondamenta ci sono: seme deterministico della città (fase 21), viewport fisse nella
+configurazione Playwright, esiti riproducibili e preset di qualità espliciti. Manca
+volutamente il confronto pixel.
+
+Motivo: le baseline sarebbero legate all'ambiente. In CI e su questa macchina Chromium
+rasterizza con SwiftShader; su una GPU reale lo stesso frame differisce per
+antialiasing, filtraggio e precisione dei float. Baseline generate in software
+fallirebbero su hardware vero e viceversa, e la specifica chiede esplicitamente di
+«evitare snapshot grafici instabili».
+
+Se verrà ripresa, la strada praticabile è: baseline generate **solo** in CI con
+SwiftShader, soglia di differenza esplicita, preset `low` e movimento ridotto per
+eliminare le animazioni, e stati catturati dopo un numero fisso di frame simulati anziché
+dopo un'attesa a tempo.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una
@@ -552,3 +612,9 @@ diventare server-authoritative. Nessun backend introdotto ora.
   visivo che richiede verifica a schermo ed è fuori dal perimetro di questo intervento.
 - `vite@7.1.5` è fissato e `npm audit` segnala vulnerabilità del solo dev server. Il
   pinning è una scelta del progetto: l'aggiornamento va valutato a parte.
+- Regressione visiva non implementata: vedi la fase 26 per il motivo e per la strada
+  praticabile.
+- `rendering/voxelModels.js` usa ancora stato di modulo con conteggio dei proprietari.
+  Funziona e rilascia correttamente, ma impedisce due scene indipendenti nello stesso
+  documento. Un `createVoxelAssetPool()` con dependency injection è il passo successivo,
+  fuori dal perimetro di questo intervento (fase 15 della specifica).

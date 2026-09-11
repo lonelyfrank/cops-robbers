@@ -65,17 +65,18 @@ Per provare il gioco senza installazione, apri **cops-and-robbers.html** in un b
 
 ## Comandi disponibili
 
-| Comando                    | Risultato                                                               |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                          |
-| `npm run lint`             | Analisi statica ESLint (flat config) su sorgenti, test e script.        |
-| `npm run typecheck`        | Controlla i tipi dei file `.js` con JSDoc e `checkJs`.                  |
-| `npm run format`           | Applica lo stile condiviso ai sorgenti; esclude build e memoria locale. |
-| `npm run format:check`     | Verifica la formattazione con Prettier senza modificare i file.         |
-| `npm test`                 | Test deterministici di matematica, stato, animazioni e interfaccia.     |
-| `npm run build`            | Build statica di produzione nella cartella `dist/`.                     |
-| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.             |
-| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                       |
+| Comando                    | Risultato                                                                |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                           |
+| `npm run lint`             | Analisi statica ESLint (flat config) su sorgenti, test e script.         |
+| `npm run typecheck`        | Controlla i tipi dei file `.js` con JSDoc e `checkJs`.                   |
+| `npm run format`           | Applica lo stile condiviso ai sorgenti; esclude build e memoria locale.  |
+| `npm run format:check`     | Verifica la formattazione con Prettier senza modificare i file.          |
+| `npm test`                 | Test deterministici di matematica, stato, animazioni e interfaccia.      |
+| `npm run test:e2e`         | Controlli nel browser con Playwright su Chromium (richiede il download). |
+| `npm run build`            | Build statica di produzione nella cartella `dist/`.                      |
+| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.              |
+| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                        |
 
 Fino alla versione 1.1 l'HTML autonomo si chiamava `cops-and-robbers.html`. Il file è stato rinominato per allinearlo al nome del progetto: i collegamenti al vecchio percorso vanno aggiornati.
 
@@ -202,6 +203,8 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 ## Verifica
 
 **103 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. I test dell'interfaccia montano il vero `index.html` in jsdom e verificano puntata, difficoltà, Corri!, Incassa, risultato, percorso, dialogo delle regole, stati disabilitati e rilascio dei listener. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
+
+**12 controlli nel browser** con Playwright (`npm run test:e2e`, dopo `npx playwright install chromium`) verificano avvio WebGL reale, corsa verde, incasso, arresto, nuova partita, ripristino, dialogo delle regole, validazione della puntata, movimento ridotto, rotazione dei temi, preset di qualità e pannello di diagnostica opzionali, più l'assenza di overflow orizzontale su desktop e mobile landscape. Girano in un job CI separato perché, senza GPU, Chromium rasterizza via software a circa **2 fotogrammi al secondo**: la suite impiega alcuni minuti e i timeout sono dimensionati su quel ritmo, non su un frame rate sano.
 
 I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico. Verificati anche la rotazione dei temi, dodici incroci senza mescolanza di tile, il logo nel browser e nell’HTML autonomo offline, la barra iniziale e la puntata centrata.
 

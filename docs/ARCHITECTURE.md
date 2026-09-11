@@ -209,6 +209,17 @@ Runner nativo di Node, nessun framework aggiuntivo.
 I test dell'interfaccia montano il **vero** `index.html` in jsdom. I test di animazione e
 città operano su geometrie e trasformazioni Three.js in Node, senza renderer WebGL.
 
+`tests/architecture.test.js` verifica i confini descritti in questo documento: se una
+dipendenza li attraversa, il test fallisce.
+
+**Controlli nel browser** (`npm run test:e2e`, Playwright su Chromium) in
+`tests/e2e/`: avvio WebGL reale, flussi di gioco, preferenze e layout. Sono un comando e
+un job CI separati perché senza GPU Chromium rasterizza via software a circa due
+fotogrammi al secondo; il clamp del delta a 0,05 s fa sì che il tempo reale avanzi circa
+dieci volte più in fretta dell'animazione, e i timeout sono dimensionati su questo. Gli
+esiti sono resi deterministici sostituendo `crypto.getRandomValues` prima del caricamento:
+nel codice distribuito non esiste alcun gancio di test.
+
 Si testa il **comportamento**, non l'implementazione interna.
 
 ## 15. Modello di sicurezza
