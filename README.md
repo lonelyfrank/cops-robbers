@@ -68,8 +68,10 @@ Per provare il gioco senza installazione, apri **cops-and-robbers.html** in un b
 | Comando                    | Risultato                                                               |
 | -------------------------- | ----------------------------------------------------------------------- |
 | `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                          |
-| `npm run lint`             | Verifica la formattazione con Prettier (non è analisi statica ESLint).  |
+| `npm run lint`             | Analisi statica ESLint (flat config) su sorgenti, test e script.        |
+| `npm run typecheck`        | Controlla i tipi dei file `.js` con JSDoc e `checkJs`.                  |
 | `npm run format`           | Applica lo stile condiviso ai sorgenti; esclude build e memoria locale. |
+| `npm run format:check`     | Verifica la formattazione con Prettier senza modificare i file.         |
 | `npm test`                 | Test deterministici della matematica, dello stato e delle animazioni.   |
 | `npm run build`            | Build statica di produzione nella cartella `dist/`.                     |
 | `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.             |
@@ -173,6 +175,6 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico. Verificati anche la rotazione dei temi, dodici incroci senza mescolanza di tile, il logo nel browser e nell’HTML autonomo offline, la barra iniziale e la puntata centrata.
 
-La workflow `.github/workflows/checks.yml` esegue formattazione, test, build e verifica che l’HTML autonomo committato sia aggiornato. L’esecuzione remota partirà al prossimo push. Dettagli della revisione e limiti delle misure: [revisione tecnica](docs/TECHNICAL_REVIEW.md).
+La workflow `.github/workflows/checks.yml` esegue formattazione, analisi statica, controllo dei tipi, test, build e verifica che l’HTML autonomo committato sia aggiornato. L’esecuzione remota partirà al prossimo push. Dettagli della revisione e limiti delle misure: [revisione tecnica](docs/TECHNICAL_REVIEW.md).
 
 Documentazione delle dipendenze: [Vite](https://vite.dev/guide/), [build Vite](https://vite.dev/guide/build), [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html). Vedi `THIRD_PARTY_NOTICES.md` per le licenze incluse.

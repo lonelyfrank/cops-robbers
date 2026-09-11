@@ -1,3 +1,9 @@
+/**
+ * @typedef {import('./core/types.js').CityThemeId} CityThemeId
+ * @typedef {(typeof CITY_THEMES)[CityThemeId]} CityTheme
+ */
+
+/** @param {any} theme */
 const freezeTheme = (theme) =>
   Object.freeze({
     ...theme,
@@ -64,13 +70,25 @@ export const CITY_THEMES = Object.freeze({
     },
   }),
 });
+/** Theme keys as a typed list: `Object.keys()` alone widens them to `string`. */
+export const CITY_THEME_IDS = /** @type {CityThemeId[]} */ (Object.keys(CITY_THEMES));
+/** @type {CityThemeId} */
 export const DEFAULT_CITY_THEME = 'district87';
+/** @type {readonly CityThemeId[]} */
 const rotation = Object.freeze(['district87', 'neonTokyo']);
+/**
+ * @param {CityThemeId} [id]
+ * @returns {CityTheme}
+ */
 export function getCityTheme(id = DEFAULT_CITY_THEME) {
   if (!Object.hasOwn(CITY_THEMES, id)) throw new RangeError('Tema della città non valido.');
   return CITY_THEMES[id];
 }
-/** Cosmetic rotation only: never consumes the wager RNG. A round keeps its theme to the end. */
+/**
+ * Cosmetic rotation only: never consumes the wager RNG. A round keeps its theme to the end.
+ * @param {number} round
+ * @returns {CityTheme}
+ */
 export function getRoundTheme(round) {
   if (!Number.isSafeInteger(round) || round < 0)
     throw new RangeError('Numero di corsa non valido.');

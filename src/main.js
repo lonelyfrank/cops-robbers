@@ -65,7 +65,9 @@ function fail(message, error) {
 
 async function initialize() {
   // Let the branded loading screen paint before preparing WebGL.
-  await new Promise((resolve) => setTimeout(resolve, 40));
+  await new Promise((resolve) => {
+    setTimeout(resolve, 40);
+  });
   if (events.signal.aborted) return;
   try {
     sceneManager = createSceneManager(canvas, document.getElementById('stage'), { motion });

@@ -5,7 +5,7 @@ import { CityStream } from '../src/cityStream.js';
 import { createCityTile } from '../src/cityTile.js';
 import { getDistrictStyle } from '../src/districtGeometry.js';
 import { CharacterController } from '../src/characterController.js';
-import { unitBox } from '../src/voxelModels.js';
+import { isInstancedMesh, unitBox } from '../src/voxelModels.js';
 import { getCityLightLevel } from '../src/cityEffects.js';
 import { MAX_CROSSINGS } from '../src/gameMath.js';
 import {
@@ -207,12 +207,12 @@ test('Diorama batches keep finite transforms, independent per-tile materials and
   a.root.updateMatrixWorld(true);
   a.root.traverse((object) => {
     assert.ok(object.matrixWorld.elements.every(Number.isFinite));
-    if (object.isInstancedMesh) assert.ok(object.instanceMatrix.array.every(Number.isFinite));
+    if (isInstancedMesh(object)) assert.ok(object.instanceMatrix.array.every(Number.isFinite));
   });
   const matrices = (tile) => {
     const result = [];
     tile.root.traverse((mesh) => {
-      if (mesh.isInstancedMesh) result.push(Array.from(mesh.instanceMatrix.array));
+      if (isInstancedMesh(mesh)) result.push(Array.from(mesh.instanceMatrix.array));
     });
     return result;
   };
@@ -300,7 +300,9 @@ test('Every cashout stop aligns with actual alley paving, including crossing twe
     const matrix = new THREE.Matrix4(),
       point = new THREE.Vector3();
     tile.root.traverse((mesh) => {
-      if (!mesh.isInstancedMesh || mesh.material.color.getHex() !== 0xc9b994) return;
+      if (!isInstancedMesh(mesh)) return;
+      if (/** @type {THREE.MeshStandardMaterial} */ (mesh.material).color.getHex() !== 0xc9b994)
+        return;
       for (let i = 0; i < mesh.count; i++) {
         mesh.getMatrixAt(i, matrix);
         point.setFromMatrixPosition(matrix).applyMatrix4(mesh.matrixWorld);

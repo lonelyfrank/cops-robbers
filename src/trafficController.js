@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createTrafficCar, material } from './voxelModels.js';
+import { createTrafficCar, isInstancedMesh, material } from './voxelModels.js';
 import { MAIN_ROAD_Z, TILE_SIZE } from './mapLayout.js';
 import { smoothStep } from './cityEffects.js';
 
@@ -11,6 +11,10 @@ const VISIBLE_EDGE = TILE_SIZE / 2 - 1.51 - 0.08;
 
 /** One car per direction, recycled outside the diorama. No traffic can enter on red. */
 export class IntersectionTraffic {
+  /**
+   * @param {number} index District index; it seeds colour and starting offset.
+   * @param {(color: number | string) => THREE.Material} [getMaterial]
+   */
   constructor(index, getMaterial = material) {
     this.root = new THREE.Group();
     this.root.name = 'cross-traffic';
@@ -49,7 +53,7 @@ export class IntersectionTraffic {
       };
       depthMaterial.customProgramCacheKey = () => 'traffic-shadow-fade-v1';
       root.traverse((object) => {
-        if (object.isInstancedMesh) object.customDepthMaterial = depthMaterial;
+        if (isInstancedMesh(object)) object.customDepthMaterial = depthMaterial;
       });
       root.rotation.y = direction === 1 ? 0 : Math.PI;
       this.root.add(root);
@@ -59,10 +63,18 @@ export class IntersectionTraffic {
         depthMaterial,
         direction,
         progress: -12 + ((index * 7 + lane * 13) % 24),
+        opacity: 1,
       };
     });
     this.update(0, true);
   }
+  /**
+   * @param {number} dt Seconds since the last frame.
+   * @param {boolean} open Whether the cross axis has green.
+   * @param {boolean} [reducedMotion]
+   * @param {boolean} [emergency] Clear both lanes for the arriving patrols.
+   * @param {number} [tileOpacity] Reveal of the owning district.
+   */
   update(dt, open, reducedMotion = false, emergency = false, tileOpacity = 1) {
     for (const car of this.cars) {
       // Clear both lanes for the arriving patrols without respawning into the roadblock.
@@ -106,7 +118,7 @@ export class IntersectionTraffic {
       car.depthMaterial.dispose();
     }
     this.root.traverse((object) => {
-      if (object.isInstancedMesh) object.dispose();
+      if (isInstancedMesh(object)) object.dispose();
     });
     this.root.clear();
   }

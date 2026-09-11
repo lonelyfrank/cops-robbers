@@ -6,6 +6,15 @@ import {
   isGreen,
 } from './gameMath.js';
 
+/**
+ * @typedef {import('./core/types.js').GamePhase} GamePhase
+ * @typedef {import('./core/types.js').DifficultyId} DifficultyId
+ * @typedef {import('./core/types.js').RoundOutcome} RoundOutcome
+ * @typedef {import('./core/types.js').GameHistoryEntry} GameHistoryEntry
+ * @typedef {import('./core/types.js').GameSnapshot} GameSnapshot
+ * @typedef {Omit<GameSnapshot, 'history'> & { history: GameHistoryEntry[] }} GameData
+ */
+
 export const INITIAL_BALANCE = 100_000;
 export const MIN_BET = 100;
 export const MAX_BET = 100_000_000;
@@ -18,6 +27,7 @@ export const PHASES = Object.freeze({
   RESULT: 'result',
 });
 
+/** @returns {number} Uniform sample in [0, 1). */
 export function secureRandom() {
   const value = new Uint32Array(1);
   globalThis.crypto.getRandomValues(value);
@@ -26,11 +36,14 @@ export function secureRandom() {
 
 /** State machine: only valid transitions can move money or consume randomness. */
 export class GameState {
+  /** @param {{ random?: () => number, initialBalance?: number }} [options] */
   constructor({ random = secureRandom, initialBalance = INITIAL_BALANCE } = {}) {
     if (!Number.isSafeInteger(initialBalance) || initialBalance < 0)
       throw new RangeError('Saldo non valido.');
     this.random = random;
+    /** @type {Set<(snapshot: GameSnapshot) => void>} */
     this.listeners = new Set();
+    /** @type {GameData} */
     this.data = {
       phase: PHASES.IDLE,
       balance: initialBalance,
@@ -44,12 +57,17 @@ export class GameState {
       history: [],
     };
   }
+  /** @returns {GameSnapshot} */
   get snapshot() {
     return Object.freeze({
       ...this.data,
       history: this.data.history.map((item) => Object.freeze({ ...item })),
     });
   }
+  /**
+   * @param {(snapshot: GameSnapshot) => void} listener Called immediately with the current state.
+   * @returns {() => boolean} Unsubscribe.
+   */
   subscribe(listener) {
     this.listeners.add(listener);
     listener(this.snapshot);
@@ -60,8 +78,9 @@ export class GameState {
     this.listeners.forEach((listener) => listener(snapshot));
   }
   get canConfigure() {
-    return [PHASES.IDLE, PHASES.RESULT].includes(this.data.phase);
+    return this.data.phase === PHASES.IDLE || this.data.phase === PHASES.RESULT;
   }
+  /** @param {number} amount Minor units. */
   setBet(amount) {
     if (
       !this.canConfigure ||
@@ -75,12 +94,14 @@ export class GameState {
     this.notify();
     return true;
   }
+  /** @param {DifficultyId} difficulty */
   setDifficulty(difficulty) {
     if (!this.canConfigure || !Object.hasOwn(DIFFICULTIES, difficulty)) return false;
     this.data.difficulty = difficulty;
     this.notify();
     return true;
   }
+  /** @param {number} [amount] Minor units; defaults to the configured bet. */
   start(amount = this.data.bet) {
     if (
       !this.canConfigure ||
@@ -125,6 +146,7 @@ export class GameState {
     if (this.data.phase !== PHASES.READY || this.data.crossing < 1) return false;
     return this.#settleCashout(this.data.crossing);
   }
+  /** @param {number} crossing */
   #settleCashout(crossing) {
     const payout = calculatePayout(this.data.stake, crossing, this.data.difficulty);
     if (!Number.isSafeInteger(this.data.balance + payout))
@@ -153,6 +175,7 @@ export class GameState {
     this.notify();
     return true;
   }
+  /** @param {RoundOutcome} outcome */
   record(outcome) {
     this.data.history.unshift({
       id: this.data.round,

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getCrossingX } from './mapLayout.js';
+import { isInstancedMesh } from './voxelModels.js';
 import { buildDistrictGeometry, SIGNAL_COLORS } from './districtGeometry.js';
 import {
   createCityLighting,
@@ -26,7 +27,15 @@ export function createHaloTexture() {
   return texture;
 }
 
-/** Tile owns its materials and instance buffers; a stream owns the shared halo texture. */
+/**
+ * Tile owns its materials and instance buffers; a stream owns the shared halo texture.
+ * @param {number} index
+ * @param {{
+ *   lighting?: ReturnType<typeof createCityLighting>,
+ *   haloTexture?: THREE.Texture,
+ *   theme?: import('./core/types.js').CityThemeId,
+ * }} [options]
+ */
 export function createCityTile(
   index,
   { lighting = createCityLighting(), haloTexture, theme: themeId = DEFAULT_CITY_THEME } = {},
@@ -38,6 +47,7 @@ export function createCityTile(
   root.name = `district-${index}`;
   root.position.x = getCrossingX(index);
   const records = new Map();
+  /** @param {number | string} key */
   const getMaterial = (key) => {
     if (!records.has(key)) {
       const config = theme.materials[key] ?? { color: theme.colors[key] ?? key };
@@ -82,6 +92,10 @@ export function createCityTile(
     lastFocus = null,
     lastCapture = null,
     lastSignal = null;
+  /**
+   * @param {THREE.Material & { opacity: number, alphaHash: boolean }} material
+   * @param {number} opacity
+   */
   function setOpacity(material, opacity) {
     material.opacity = opacity;
     const alphaHash = opacity < 1;
@@ -90,14 +104,21 @@ export function createCityTile(
       material.needsUpdate = true;
     }
   }
+  /** @param {import('./core/types.js').TrafficSignalState} state */
   tile.setSignal = (state) => {
     if (!['off', 'red', 'yellow', 'green'].includes(state))
       throw new RangeError('Stato semaforo non valido.');
     tile.signal = state;
   };
+  /** @param {import('./core/types.js').TileRole} role */
   tile.setRole = (role) => {
     tile.role = role;
   };
+  /**
+   * @param {number} dt
+   * @param {number} progress Reveal progress in [0, 1].
+   * @param {{ reducedMotion?: boolean, trafficBlocked?: boolean }} [options]
+   */
   tile.update = (dt, progress, { reducedMotion = false, trafficBlocked = false } = {}) => {
     progress = reducedMotion ? 1 : progress;
     const reveal = getTileReveal(progress),
@@ -158,7 +179,7 @@ export function createCityTile(
     for (const sprite of halos) sprite.material.dispose();
     if (ownsTexture) haloTexture.dispose();
     root.traverse((object) => {
-      if (object.isInstancedMesh) object.dispose();
+      if (isInstancedMesh(object)) object.dispose();
     });
     root.clear();
   };

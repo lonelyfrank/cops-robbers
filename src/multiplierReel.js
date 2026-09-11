@@ -4,7 +4,18 @@ import { formatMultiplier } from './format.js';
 export const REEL_DURATION = 550;
 const EASING = 'cubic-bezier(.22,.8,.22,1)';
 
-/** Presentation only: a settled result retains the difficulty of the completed round. */
+/**
+ * @typedef {object} ReelValues
+ * @property {number} previousMultiplier
+ * @property {number} currentMultiplier
+ * @property {number | null} nextMultiplier
+ */
+
+/**
+ * Presentation only: a settled result retains the difficulty of the completed round.
+ * @param {import('./core/types.js').GameSnapshot} snapshot
+ * @returns {ReelValues}
+ */
 export function getReelValues(snapshot) {
   const { crossing, phase, multiplier, difficulty, history } = snapshot;
   const settledDifficulty =
@@ -17,18 +28,25 @@ export function getReelValues(snapshot) {
   };
 }
 
+/** @param {number} slot */
 const pose = (slot) => ({
   transform: `translateY(-50%) translateY(calc(var(--reel-step) * ${slot})) rotateX(${-slot * 42}deg) scale(${slot === 0 ? 1 : 0.74})`,
   opacity: Math.abs(slot) > 1 ? 0 : slot === 0 ? 1 : 0.38,
 });
 
-/** Three-value CCTV drum. It never delays controls, changes state or consumes randomness. */
+/**
+ * Three-value CCTV drum. It never delays controls, changes state or consumes randomness.
+ * @param {HTMLElement} root
+ * @param {{ motion?: import('./core/types.js').MotionPreference }} [options]
+ */
 export function createMultiplierReel(root, { motion = { reduced: false } } = {}) {
-  const drum = root.querySelector('.reel-drum');
-  const announcement = root.querySelector('.reel-announcement');
-  let values = null,
-    animations = [],
-    revision = 0,
+  const drum = /** @type {HTMLElement} */ (root.querySelector('.reel-drum'));
+  const announcement = /** @type {HTMLElement} */ (root.querySelector('.reel-announcement'));
+  /** @type {ReelValues | null} */
+  let values = null;
+  /** @type {Animation[]} */
+  let animations = [];
+  let revision = 0,
     disposed = false,
     lastKey = '';
 
@@ -38,6 +56,10 @@ export function createMultiplierReel(root, { motion = { reduced: false } } = {})
     animations = [];
     root.classList.remove('is-rolling');
   }
+  /**
+   * @param {number | null} value
+   * @param {number} slot
+   */
   function row(value, slot) {
     const element = document.createElement('span');
     element.className = 'reel-value';
@@ -66,6 +88,10 @@ export function createMultiplierReel(root, { motion = { reduced: false } } = {})
   });
 
   return {
+    /**
+     * @param {ReelValues} next
+     * @param {{ animate?: boolean, locked?: boolean }} [options]
+     */
     update(next, { animate = false, locked = false } = {}) {
       if (disposed) return;
       const key = JSON.stringify([next, locked]);

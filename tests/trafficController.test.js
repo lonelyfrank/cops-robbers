@@ -40,10 +40,15 @@ test('Cars in either lane clear before the runner or simultaneous patrol can rea
           c.update(dt);
           traffic.update(dt, false);
           for (const car of traffic.cars)
-            for (const [actor, origin, halfLength, halfWidth] of [
+            for (const [
+              actor,
+              origin,
+              halfLength,
+              halfWidth,
+            ] of /** @type {[THREE.Object3D, number, number, number][]} */ ([
               [c.thief.root, getCrossingX(crossing), 0.4, 0.5],
               [c.chase.root, getCrossingX(crossing - 1), 1.68, 0.94],
-            ]) {
+            ])) {
               const dx = Math.abs(actor.position.x - (origin + car.root.position.x));
               const dz = Math.abs(RUNNER_Z - car.root.position.z);
               assert.ok(

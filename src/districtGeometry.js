@@ -6,6 +6,29 @@ import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
 import { neonBuilding, neonStreetDetails } from './neonDistrict.js';
 export const SIGNAL_COLORS = Object.freeze({ red: 0xff365b, yellow: 0xffbd3f, green: 0x8bff7e });
 
+/**
+ * Deterministic per-district architecture. Cosmetic only: it never feeds the wager RNG.
+ * @typedef {object} BuildingStyle
+ * @property {number} x
+ * @property {number} z
+ * @property {number} width
+ * @property {number} depth
+ * @property {number} floors
+ * @property {number} color
+ * @property {boolean} [shop]
+ * @property {boolean} [striped]
+ * @property {boolean} [tank]
+ * @property {boolean} [fireEscape]
+ * @property {number} [awning]
+ *
+ * @typedef {object} DistrictStyle
+ * @property {import('./core/types.js').CityThemeId} themeId
+ * @property {number} amenity
+ * @property {number} treeScale
+ * @property {BuildingStyle[]} buildings
+ */
+
+/** @param {number} index @returns {() => number} */
 function randomFor(index) {
   let seed = (70241 + index * 98711) | 0;
   return () => {
@@ -14,6 +37,11 @@ function randomFor(index) {
   };
 }
 
+/**
+ * @param {number} index
+ * @param {import('./core/types.js').CityThemeId} [themeId]
+ * @returns {DistrictStyle}
+ */
 export function getDistrictStyle(index, themeId = DEFAULT_CITY_THEME) {
   const theme = getCityTheme(themeId);
   const random = randomFor(index + 503);
@@ -67,6 +95,12 @@ export function getDistrictStyle(index, themeId = DEFAULT_CITY_THEME) {
   };
 }
 
+/**
+ * @param {VoxelBatch} batch
+ * @param {number} x
+ * @param {number} z
+ * @param {Partial<BuildingStyle>} [config]
+ */
 function building(
   batch,
   x,
@@ -178,6 +212,10 @@ function building(
   }
 }
 
+/**
+ * @param {VoxelBatch} batch
+ * @param {number} variant
+ */
 function urbanAmenity(batch, variant) {
   const x = 7.5,
     z = -10;
@@ -207,6 +245,13 @@ function urbanAmenity(batch, variant) {
   }
 }
 
+/**
+ * @param {VoxelBatch} batch
+ * @param {number} x
+ * @param {number} z
+ * @param {number} [scale]
+ * @param {number} [color]
+ */
 function tree(batch, x, z, scale = 1, color = 0x1d6750) {
   batch.add(0x704b34, [0.36 * scale, 1.75 * scale, 0.38 * scale], [x, 0.35 + 0.86 * scale, z]);
   batch.add(color, [1.72 * scale, 1.16 * scale, 1.69 * scale], [x, 0.3 + 2.15 * scale, z]);
@@ -222,6 +267,13 @@ function tree(batch, x, z, scale = 1, color = 0x1d6750) {
   );
 }
 
+/**
+ * @param {VoxelBatch} batch
+ * @param {number} x
+ * @param {number} z
+ * @param {number} width
+ * @param {number} depth
+ */
 function planter(batch, x, z, width, depth) {
   batch.add(0x778076, [width, 0.47, depth], [x, 0.43, z]);
   batch.add(0x374530, [width - 0.24, 0.13, depth - 0.24], [x, 0.69, z]);
@@ -231,6 +283,10 @@ function planter(batch, x, z, width, depth) {
     }
 }
 
+/**
+ * @param {VoxelBatch} batch
+ * @param {() => number} random
+ */
 function buildFoundation(batch, random) {
   const half = TILE_SIZE / 2;
   // Square floating foundation, with exposed, staggered voxel strata.
@@ -284,6 +340,13 @@ function buildFoundation(batch, random) {
     }
 }
 
+/**
+ * @param {number} index
+ * @param {THREE.Group} root
+ * @param {(color: number | string) => THREE.Material} getMaterial
+ * @param {THREE.Texture} haloTexture
+ * @param {import('./core/types.js').CityThemeId} [themeId]
+ */
 export function buildDistrictGeometry(
   index,
   root,
@@ -301,6 +364,10 @@ export function buildDistrictGeometry(
   // Roads stay flat while individual structures rise from their ground anchors.
   buildFoundation(batch, random);
   batch.build(root, getMaterial);
+  /**
+   * @param {string} name
+   * @param {number} delay
+   */
   function growthGroup(name, delay) {
     const anchor = new THREE.Group(),
       content = new THREE.Group();
@@ -366,6 +433,10 @@ export function buildDistrictGeometry(
   for (const x of ALLEY_LOCAL_X)
     for (let z = 8.5; z < 13; z += 0.6) batch.add(0xc9b994, [1.02, 0.035, 0.57], [x, 0.274, z]);
 
+  /**
+   * @param {number} x
+   * @param {number} z
+   */
   function streetLamp(x, z) {
     batch.add(0x344252, [0.48, 0.3, 0.48], [x, 0.39, z]);
     batch.add(0x586573, [0.16, 2.05, 0.16], [x, 1.47, z]);
@@ -395,6 +466,11 @@ export function buildDistrictGeometry(
   streetLamp(-3.9, -10.8);
   streetLamp(3.9, -10.8);
 
+  /**
+   * @param {number} x
+   * @param {number} z
+   * @param {'main' | 'cross'} [axis]
+   */
   function trafficLight(x, z, axis = 'main') {
     batch.add(0x354457, [0.51, 0.24, 0.51], [x, 0.39, z]);
     batch.add(0x53687b, [0.2, 2.35, 0.2], [x, 1.64, z]);

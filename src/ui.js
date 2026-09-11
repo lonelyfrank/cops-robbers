@@ -73,10 +73,14 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
       ].map((id) => [id, document.getElementById(id)]),
     ),
   );
-  const board = document.querySelector('.game-board');
+  const board = /** @type {HTMLElement} */ (document.querySelector('.game-board'));
   const reel = createMultiplierReel(dom['multiplier-reel'], { motion });
-  const betButtons = [...document.querySelectorAll('[data-bet]')];
-  const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
+  const betButtons = [
+    .../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-bet]')),
+  ];
+  const difficultyButtons = [
+    .../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-difficulty]')),
+  ];
   const events = new AbortController();
   const on = (target, type, handler) =>
     target.addEventListener(type, handler, { signal: events.signal });
@@ -87,10 +91,14 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
     historyKey = null,
     routeKey = '',
     lastStatus = '';
-  const input = dom['bet-input'],
-    mainButton = dom['main-button'],
-    cashoutButton = dom['cashout-button'];
-  const ruleDialog = dom['rules-dialog'];
+  const input = /** @type {HTMLInputElement} */ (dom['bet-input']);
+  const mainButton = /** @type {HTMLButtonElement} */ (dom['main-button']);
+  const cashoutButton = /** @type {HTMLButtonElement} */ (dom['cashout-button']);
+  const resetButton = /** @type {HTMLButtonElement} */ (dom['reset-button']);
+  const betFieldset = /** @type {HTMLFieldSetElement} */ (dom['bet-fieldset']);
+  const difficultyFieldset = /** @type {HTMLFieldSetElement} */ (dom['difficulty-fieldset']);
+  const clock = /** @type {HTMLTimeElement} */ (dom['camera-clock']);
+  const ruleDialog = /** @type {HTMLDialogElement} */ (dom['rules-dialog']);
   const clockFormat = new Intl.DateTimeFormat('it-IT', {
     hour: '2-digit',
     minute: '2-digit',
@@ -98,8 +106,8 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
   });
   const updateClock = () => {
     const now = new Date();
-    dom['camera-clock'].textContent = clockFormat.format(now);
-    dom['camera-clock'].dateTime = now.toISOString();
+    clock.textContent = clockFormat.format(now);
+    clock.dateTime = now.toISOString();
   };
   updateClock();
   const clockTimer = setInterval(updateClock, 1000);
@@ -218,7 +226,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
   on(cashoutButton, 'click', () => {
     if (ready) actions.cashout();
   });
-  on(dom['reset-button'], 'click', () => {
+  on(resetButton, 'click', () => {
     if (!game.canConfigure) return;
     input.value = '25,00';
     dom['bet-error'].textContent = '';
@@ -274,15 +282,15 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
 
   function renderControls(s, { configure, decision, active, potential }) {
     input.classList.toggle('is-wide', input.value.length > 8);
-    dom['bet-fieldset'].disabled = active || !ready;
-    dom['difficulty-fieldset'].disabled = active || !ready;
-    dom['reset-button'].disabled = active || !ready;
+    betFieldset.disabled = active || !ready;
+    difficultyFieldset.disabled = active || !ready;
+    resetButton.disabled = active || !ready;
     for (const button of difficultyButtons)
       button.setAttribute('aria-pressed', String(button.dataset.difficulty === s.difficulty));
     dom['difficulty-hint'].textContent =
       `PROTOCOLLO ${DIFFICULTIES[s.difficulty].label.toLocaleUpperCase('it-IT')}`;
     dom['difficulty-hint'].title = DIFFICULTIES[s.difficulty].description;
-    dom['difficulty-fieldset'].dataset.level = s.difficulty;
+    difficultyFieldset.dataset.level = s.difficulty;
     const complete = s.crossing === MAX_CROSSINGS && !configure;
     const gateChance = complete
       ? 0
@@ -319,7 +327,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
     dom['action-caption'].textContent = caption;
   }
 
-  function renderResult(s) {
+  function renderResult(s, _view) {
     const showResult = s.phase === PHASES.RESULT;
     dom['result-banner'].hidden = !showResult;
     if (showResult) {
@@ -373,7 +381,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
   }
 
   function renderStatus(s, { decision, pendingCrossing, potential, probability }) {
-    let status = '';
+    let status;
     if (s.phase === PHASES.IDLE)
       status = 'Il ladro aspetta al rosso. Imposta la puntata e avvia la fuga quando vuoi.';
     else if (s.phase === PHASES.RUNNING)
@@ -394,7 +402,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
     }
   }
 
-  function renderHistory(s) {
+  function renderHistory(s, _view) {
     const newHistoryKey = s.history.map((r) => `${r.id}:${r.outcome}`).join(',');
     if (newHistoryKey !== historyKey) {
       historyKey = newHistoryKey;

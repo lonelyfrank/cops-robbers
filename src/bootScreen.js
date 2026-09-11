@@ -1,4 +1,5 @@
 /** A short presentation bar; 100% is reached only after the scene has rendered. */
+/** @param {{ motion: import('./core/types.js').MotionPreference }} options */
 export function createBootScreen({ motion }) {
   const screen = document.getElementById('boot-screen'),
     app = document.getElementById('app');
@@ -10,12 +11,16 @@ export function createBootScreen({ motion }) {
     amount = 0,
     leaving = false,
     resolveReady;
-  let interval, exitTimer;
+  /** @type {ReturnType<typeof setInterval> | 0} */
+  let interval = 0;
+  /** @type {ReturnType<typeof setTimeout> | 0} */
+  let exitTimer = 0;
   const started = performance.now();
   const completed = document.documentElement.dataset.bootComplete === 'true';
   const finished = new Promise((resolve) => {
     resolveReady = resolve;
   });
+  /** @param {boolean} success */
   function hide(success) {
     clearInterval(interval);
     clearTimeout(exitTimer);

@@ -10,6 +10,15 @@ const CAFE_GLYPHS = Object.freeze([
   ['11111', '00001', '00001', '00010', '01100'], // フ
   ['00000', '01110', '00100', '00100', '01110'], // ェ
 ]);
+/**
+ * @param {import('./voxelModels.js').VoxelBatch} batch
+ * @param {number} x
+ * @param {number} y
+ * @param {number} z
+ * @param {string} color Theme material key for the neon strokes.
+ * @param {boolean} ramen
+ * @param {number} [height]
+ */
 function verticalSign(batch, x, y, z, color, ramen, height = 3.1) {
   batch.add(0x191c39, [0.83, height, 0.28], [x, y, z]);
   for (const dx of [-0.44, 0.44])
@@ -29,6 +38,11 @@ function verticalSign(batch, x, y, z, color, ramen, height = 3.1) {
     ),
   );
 }
+/**
+ * @param {import('./voxelModels.js').VoxelBatch} batch
+ * @param {import('./districtGeometry.js').BuildingStyle} config
+ * @param {number} variant
+ */
 export function neonBuilding(batch, { x, z, width, depth, floors, shop }, variant) {
   const base = 0.25,
     height = floors * 1.85 + 1.45,
@@ -155,6 +169,7 @@ export function neonBuilding(batch, { x, z, width, depth, floors, shop }, varian
       batch.add(0x14283e, [0.4, 0.12, 0.06], [vx, 0.5, front + 0.8]);
     }
 }
+/** @param {import('./voxelModels.js').VoxelBatch} batch */
 export function neonStreetDetails(batch) {
   // Subway canopy and lit entrance board in the same back-right urban parcel.
   batch.add(0x23334b, [3.4, 0.16, 2.15], [7.5, 2.4, -10]);

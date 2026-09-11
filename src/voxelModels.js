@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 
+/**
+ * @typedef {[number, number, number]} Triple
+ * @typedef {number | string} VoxelColor Palette colour, or a named theme material key.
+ */
+
 /** Shared unit geometry and materials keep the voxel props inexpensive. */
 export let unitBox = new THREE.BoxGeometry(1, 1, 1);
 const materialCache = new Map();
@@ -18,12 +23,34 @@ export function retainVoxelAssets() {
     unitBox = new THREE.BoxGeometry(1, 1, 1);
   };
 }
+/**
+ * @param {VoxelColor} color
+ * @param {number} [roughness]
+ * @returns {THREE.MeshStandardMaterial}
+ */
 export function material(color, roughness = 0.85) {
   const key = `${color}:${roughness}`;
   if (!materialCache.has(key))
     materialCache.set(key, new THREE.MeshStandardMaterial({ color, roughness, metalness: 0 }));
   return materialCache.get(key);
 }
+/**
+ * Narrowing helper: Three.js flags instancing on the instance, not on `Object3D`.
+ * @param {THREE.Object3D} node
+ * @returns {node is THREE.InstancedMesh}
+ */
+export function isInstancedMesh(node) {
+  return /** @type {THREE.InstancedMesh} */ (node).isInstancedMesh === true;
+}
+
+/**
+ * @param {THREE.Object3D} parent
+ * @param {Triple} size
+ * @param {Triple} position
+ * @param {number | THREE.Material} color
+ * @param {{ shadow?: boolean, rotation?: Triple }} [options]
+ * @returns {THREE.Mesh}
+ */
 export function box(parent, size, position, color, options = {}) {
   const mesh = new THREE.Mesh(unitBox, typeof color === 'number' ? material(color) : color);
   mesh.scale.set(...size);
@@ -79,6 +106,11 @@ export function createThief() {
 }
 
 /** Small civilian cars, batched by paint; no additional real-time lights. */
+/**
+ * @param {number} color
+ * @param {boolean} [taxi]
+ * @param {(color: VoxelColor) => THREE.Material} [getMaterial]
+ */
 export function createTrafficCar(color, taxi = false, getMaterial = material) {
   const root = new THREE.Group();
   root.name = taxi ? 'city-taxi' : 'city-car';
@@ -98,6 +130,7 @@ export function createTrafficCar(color, taxi = false, getMaterial = material) {
 }
 
 /** +Z is the front of the car. Beacons use colored light, not emissive materials. */
+/** @param {{ lights?: boolean }} [options] */
 export function createPoliceCar({ lights = true } = {}) {
   const root = new THREE.Group();
   root.name = 'police-car';
@@ -119,8 +152,9 @@ export function createPoliceCar({ lights = true } = {}) {
   }
   box(root, [1.23, 0.08, 0.34], [0, 1.66, -0.14], 0x152034);
   const blue = box(root, [0.48, 0.18, 0.3], [-0.33, 1.78, -0.14], 0x557df9);
-  blue.material.emissive.set(0x315fdf);
-  blue.material.emissiveIntensity = 0.75;
+  const beacon = /** @type {THREE.MeshStandardMaterial} */ (blue.material);
+  beacon.emissive.set(0x315fdf);
+  beacon.emissiveIntensity = 0.75;
   const red = box(root, [0.48, 0.18, 0.3], [0.33, 1.78, -0.14], 0xf14d65);
   const blueLight = new THREE.PointLight(0x467bff, 0, 11, 2);
   blueLight.position.set(-0.6, 2.05, 0);
@@ -133,12 +167,23 @@ export function createPoliceCar({ lights = true } = {}) {
 /** Bake decorative boxes into color batches. Only the scene owner disposes them. */
 export class VoxelBatch {
   constructor() {
+    /** @type {Map<VoxelColor, { size: Triple, position: Triple, rotation: Triple }[]>} */
     this.groups = new Map();
   }
+  /**
+   * @param {VoxelColor} color
+   * @param {Triple} size
+   * @param {Triple} position
+   * @param {Triple} [rotation]
+   */
   add(color, size, position, rotation = [0, 0, 0]) {
     if (!this.groups.has(color)) this.groups.set(color, []);
     this.groups.get(color).push({ size, position, rotation });
   }
+  /**
+   * @param {THREE.Object3D} parent
+   * @param {(color: VoxelColor) => THREE.Material} [getMaterial]
+   */
   build(parent, getMaterial = material) {
     const dummy = new THREE.Object3D();
     for (const [color, instances] of this.groups) {

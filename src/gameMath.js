@@ -1,4 +1,7 @@
-/** All probability / payout functions are pure. No Three.js or browser imports. */
+/**
+ * All probability / payout functions are pure. No Three.js or browser imports.
+ * @typedef {import('./core/types.js').DifficultyId} DifficultyId
+ */
 export const RTP_TARGET = 0.96;
 export const INITIAL_GREEN_PROBABILITY = 0.95;
 // Defensive floor for future curve changes; not reached within the current twelve crossings.
@@ -18,12 +21,24 @@ export const DIFFICULTIES = Object.freeze({
   }),
 });
 
+/** Difficulty keys as a typed list: `Object.keys()` alone widens them to `string`. */
+export const DIFFICULTY_IDS = /** @type {DifficultyId[]} */ (Object.keys(DIFFICULTIES));
+
+/**
+ * @param {number} n Junction number, counted from 1.
+ * @param {DifficultyId} difficulty
+ */
 function validate(n, difficulty) {
   if (!Number.isInteger(n) || n < 0 || n > MAX_CROSSINGS)
     throw new RangeError('Incrocio non valido.');
   if (!Object.hasOwn(DIFFICULTIES, difficulty)) throw new RangeError('Difficoltà non valida.');
 }
 
+/**
+ * @param {number} n
+ * @param {DifficultyId} [difficulty]
+ * @returns {number}
+ */
 export function getGreenProbability(n, difficulty = 'medium') {
   validate(n, difficulty);
   if (n === 0) throw new RangeError('Gli incroci partono da 1.');
@@ -33,6 +48,11 @@ export function getGreenProbability(n, difficulty = 'medium') {
   );
 }
 
+/**
+ * @param {number} n
+ * @param {DifficultyId} [difficulty]
+ * @returns {number}
+ */
 export function getCumulativeProbability(n, difficulty = 'medium') {
   validate(n, difficulty);
   let probability = 1;
@@ -40,7 +60,13 @@ export function getCumulativeProbability(n, difficulty = 'medium') {
   return probability;
 }
 
-/** The effective multiplier paid at cashout. */
+/**
+ * The effective multiplier paid at cashout.
+ * @param {number} n
+ * @param {DifficultyId} [difficulty]
+ * @param {number} [rtp]
+ * @returns {number}
+ */
 export function getMultiplier(n, difficulty = 'medium', rtp = RTP_TARGET) {
   validate(n, difficulty);
   if (!Number.isFinite(rtp) || rtp <= 0 || rtp > 1) {
@@ -49,7 +75,14 @@ export function getMultiplier(n, difficulty = 'medium', rtp = RTP_TARGET) {
   return n === 0 ? 1 : rtp / getCumulativeProbability(n, difficulty);
 }
 
-/** Account in hundredths of a credit; round only at settlement. */
+/**
+ * Account in hundredths of a credit; round only at settlement.
+ * @param {number} stakeMinor
+ * @param {number} n
+ * @param {DifficultyId} [difficulty]
+ * @param {number} [rtp]
+ * @returns {number}
+ */
 export function calculatePayout(stakeMinor, n, difficulty = 'medium', rtp = RTP_TARGET) {
   if (!Number.isSafeInteger(stakeMinor) || stakeMinor <= 0)
     throw new RangeError('Puntata non valida.');
@@ -58,13 +91,24 @@ export function calculatePayout(stakeMinor, n, difficulty = 'medium', rtp = RTP_
   return payout;
 }
 
-/** Inject the random sample for deterministic tests. Actual gameplay uses crypto. */
+/**
+ * Inject the random sample for deterministic tests. Actual gameplay uses crypto.
+ * @param {number} n
+ * @param {DifficultyId} difficulty
+ * @param {number} sample Uniform sample in [0, 1).
+ * @returns {boolean}
+ */
 export function isGreen(n, difficulty, sample) {
   if (!Number.isFinite(sample) || sample < 0 || sample >= 1)
     throw new RangeError('Campione casuale non valido.');
   return sample < getGreenProbability(n, difficulty);
 }
 
+/**
+ * @param {DifficultyId} [difficulty]
+ * @param {number} [rtp]
+ * @returns {{ n: number, greenProbability: number, cumulativeProbability: number, totalMultiplier: number }[]}
+ */
 export function buildRiskTable(difficulty = 'medium', rtp = RTP_TARGET) {
   return Array.from({ length: MAX_CROSSINGS }, (_, index) => {
     const n = index + 1;

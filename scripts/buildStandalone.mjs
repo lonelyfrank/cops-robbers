@@ -18,9 +18,12 @@ const bundle = await build({
     chunkSizeWarningLimit: 800,
   },
 });
-const output = (Array.isArray(bundle) ? bundle : [bundle]).flatMap((item) => item.output);
+const builds = /** @type {import('rollup').RollupOutput[]} */ (
+  Array.isArray(bundle) ? bundle : [bundle]
+);
+const output = builds.flatMap((item) => item.output);
 const entry = output.find((item) => item.fileName === 'index.html');
-if (!entry) throw new Error('HTML di partenza non trovato.');
+if (!entry || entry.type !== 'asset') throw new Error('HTML di partenza non trovato.');
 const decode = (value) => (typeof value === 'string' ? value : new TextDecoder().decode(value));
 let html = decode(entry.source);
 html = html.replace(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/g, (_, path) => {

@@ -123,11 +123,21 @@ test('Invalid or unaffordable stakes never mutate balance or begin a round', () 
     },
   });
   const before = g.snapshot;
-  for (const bet of [0, -100, 99, 123.4, NaN, Infinity, '2500', INITIAL_BALANCE + 1, MAX_BET + 1])
-    assert.equal(g.start(bet), false);
+  const hostileStakes = /** @type {any[]} */ ([
+    0,
+    -100,
+    99,
+    123.4,
+    NaN,
+    Infinity,
+    '2500',
+    INITIAL_BALANCE + 1,
+    MAX_BET + 1,
+  ]);
+  for (const bet of hostileStakes) assert.equal(g.start(bet), false);
   assert.deepEqual(g.snapshot, before);
   assert.equal(calls, 0);
-  assert.equal(g.setDifficulty('constructor'), false);
+  assert.equal(g.setDifficulty(/** @type {any} */ ('constructor')), false);
 });
 
 test('Maximum stake loss, insufficient balance, and demo reset work without negative credits', () => {
@@ -154,7 +164,7 @@ test('Snapshots cannot modify the internal history; history retains only the lat
   const snapshot = g.snapshot;
   assert.equal(snapshot.history.length, 8);
   assert.equal(snapshot.history[0].id, 10);
-  snapshot.history.pop();
+  /** @type {any[]} */ (snapshot.history).pop();
   assert.equal(g.snapshot.history.length, 8);
   assert.throws(() => {
     snapshot.history[0].payout = 0;

@@ -24,7 +24,7 @@ La revisione prepara il redesign della UI mantenendo probabilità, moltiplicator
 - UI suddivisa per responsabilità, con lookup DOM memorizzati.
 - Parametri principali di illuminazione e camera raccolti in `TUNING`.
 - Rimossi `CROSSING_SPACING`, `tile.progress` e `lampPositions`; i piccoli hook diagnostici di CityStream sono documentati.
-- Prettier e EditorConfig, con commit di formattazione separato. `npm run lint` controlla lo stile, non sostituisce un analizzatore statico.
+- Prettier e EditorConfig, con commit di formattazione separato. Dalla revisione architetturale `npm run lint` è ESLint e `npm run format:check` copre lo stile.
 - Workflow GitHub Actions per formattazione, test, build e coerenza dell’HTML autonomo.
 
 ## Precisazioni rispetto alla segnalazione

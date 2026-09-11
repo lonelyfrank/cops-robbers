@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   RTP_TARGET,
-  DIFFICULTIES,
+  DIFFICULTY_IDS,
   MAX_CROSSINGS,
   MIN_GREEN_PROBABILITY,
   getGreenProbability,
@@ -17,7 +17,7 @@ const close = (a, b, epsilon = 1e-12) =>
   assert.ok(Math.abs(a - b) <= epsilon, `${a} differs from ${b}`);
 
 test('All difficulties start at 95%; probabilities decrease and multipliers increase', () => {
-  for (const difficulty of Object.keys(DIFFICULTIES)) {
+  for (const difficulty of DIFFICULTY_IDS) {
     close(getGreenProbability(1, difficulty), 0.95);
     for (let n = 2; n <= MAX_CROSSINGS; n++) {
       assert.ok(getGreenProbability(n, difficulty) < getGreenProbability(n - 1, difficulty));
@@ -27,14 +27,14 @@ test('All difficulties start at 95%; probabilities decrease and multipliers incr
 });
 
 test('Actual payable multiplier gives 96% RTP at all 36 difficulty / crossing combinations', () => {
-  for (const difficulty of Object.keys(DIFFICULTIES))
+  for (const difficulty of DIFFICULTY_IDS)
     for (let n = 1; n <= MAX_CROSSINGS; n++) {
       close(getCumulativeProbability(n, difficulty) * getMultiplier(n, difficulty), RTP_TARGET);
     }
 });
 
 test('Risk table matches actual cashout amounts across all crossings and difficulties', () => {
-  for (const difficulty of Object.keys(DIFFICULTIES)) {
+  for (const difficulty of DIFFICULTY_IDS) {
     const rows = buildRiskTable(difficulty);
     assert.equal(rows.length, MAX_CROSSINGS);
     for (const row of rows) {
@@ -58,14 +58,14 @@ test('Higher difficulty has lower cumulative survival and a higher payout', () =
 
 test('RTP can be recalibrated independently of risk and rendering', () => {
   for (const target of [0.9, 0.96, 0.98, 1])
-    for (const d of Object.keys(DIFFICULTIES)) {
+    for (const d of DIFFICULTY_IDS) {
       for (const row of buildRiskTable(d, target))
         close(row.cumulativeProbability * row.totalMultiplier, target);
     }
 });
 
 test('Payouts settle in integer hundredths, never round up, and differ by less than 0.01 CR', () => {
-  for (const d of Object.keys(DIFFICULTIES))
+  for (const d of DIFFICULTY_IDS)
     for (let n = 1; n <= MAX_CROSSINGS; n++)
       for (const stake of [100, 123, 2500, 100000, 100000000]) {
         const exact = stake * getMultiplier(n, d),
@@ -83,13 +83,13 @@ test('Green uses a strict random boundary and rejects invalid samples', () => {
   assert.equal(isGreen(1, 'easy', p - 1e-9), true);
   assert.equal(isGreen(1, 'easy', p), false);
   assert.equal(isGreen(1, 'easy', 0.99999), false);
-  for (const v of [-0.1, 1, NaN, Infinity, '0.5'])
+  for (const v of /** @type {any[]} */ ([-0.1, 1, NaN, Infinity, '0.5']))
     assert.throws(() => isGreen(1, 'easy', v), RangeError);
 });
 
 test('Math rejects invalid crossing, difficulty, RTP, and unsafe monetary input', () => {
   for (const n of [-1, 0.5, 13, NaN]) assert.throws(() => getMultiplier(n), RangeError);
-  for (const d of ['unknown', 'constructor', '__proto__'])
+  for (const d of /** @type {any[]} */ (['unknown', 'constructor', '__proto__']))
     assert.throws(() => getMultiplier(1, d), RangeError);
   assert.throws(() => getGreenProbability(0), RangeError);
   for (const rtp of [0, -1, 1.01, NaN])
@@ -101,7 +101,7 @@ test('Math rejects invalid crossing, difficulty, RTP, and unsafe monetary input'
 });
 
 test('The probability floor is a defensive bound outside the current twelve-crossing curve', () => {
-  for (const d of Object.keys(DIFFICULTIES))
+  for (const d of DIFFICULTY_IDS)
     for (let n = 1; n <= MAX_CROSSINGS; n++)
       assert.ok(getGreenProbability(n, d) > MIN_GREEN_PROBABILITY);
 });
@@ -113,7 +113,7 @@ test('Documented rounded RTP examples refer to the worst available cashout strat
     [100000, 96],
   ]) {
     let minimum = 1;
-    for (const d of Object.keys(DIFFICULTIES))
+    for (const d of DIFFICULTY_IDS)
       for (let n = 1; n <= MAX_CROSSINGS; n++)
         minimum = Math.min(
           minimum,
