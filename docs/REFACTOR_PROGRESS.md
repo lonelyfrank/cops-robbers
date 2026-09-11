@@ -602,6 +602,120 @@ dopo un'attesa a tempo.
 
 ---
 
+## Riepilogo finale
+
+### Architettura precedente
+
+`src/` piatta, 20 file. Quattro moduli concentravano quasi tutto: `ui.js` (479 righe:
+DOM, orologio, percorso, validazione, sei render, dialogo, errore), `sceneManager.js`
+(314: renderer, camera, resize, luci, indicatori, effetti, dispose, lettura diretta di un
+elemento della pagina), `districtGeometry.js` (425: fondazioni, strade, tre tipi di
+edificio, arredo, lampioni, semafori, composizione) e `main.js` (150: entry point,
+coordinatore, ciclo di animazione, clamp, visibilità, HMR). I numeri regolabili erano
+sparsi fra formule, stato e un blocco `TUNING`. `npm run lint` eseguiva solo Prettier.
+Nessun controllo dei tipi. Nessun test dell'interfaccia né del browser.
+
+### Architettura nuova
+
+65 file, 5.265 righe, per livelli con confini verificati dai test:
+
+| Livello      | File | Righe | Responsabilità                                              |
+| ------------ | ---: | ----: | ----------------------------------------------------------- |
+| `core/`      |    6 |   535 | Matematica, stato, denaro, formattazione, tipi. Puro.       |
+| `config/`    |    3 |   195 | Gameplay, rendering, animazione. Solo valori.               |
+| `runtime/`   |    2 |   177 | Orchestrazione e ciclo dei frame.                           |
+| `actors/`    |    6 |   344 | Controller e gestori delle animazioni.                      |
+| `world/`     |   18 | 1.643 | Streaming, tile, traffico, geometria, temi, seme.           |
+| `rendering/` |    9 |   963 | Renderer, camera, luci, indicatori, effetti, asset, shader. |
+| `ui/`        |   19 | 1.226 | Composition root, vista pura, testi, componenti.            |
+| radice       |    2 |   182 | `main.js` e la preferenza di movimento.                     |
+
+Il file più grande è `rendering/voxelModels.js` con 227 righe.
+
+### Miglioramenti principali
+
+1. ESLint reale separato da Prettier, con regole scelte per trovare difetti: tre errori
+   veri corretti al primo passaggio.
+2. Controllo dei tipi su file `.js` con JSDoc e `@types/three`: 84 errori reali risolti,
+   vocabolario di dominio condiviso in `core/types.js`.
+3. `main.js` è solo composition root; l'orchestrazione è esplicita e provabile senza WebGL.
+4. UI e scena non sono più monoliti; il rendering non conosce più il documento.
+5. Le patch agli shader di Three.js non possono più fallire in silenzio.
+6. Preset di qualità e diagnostica misurata, senza sniffing dello user agent.
+7. I confini architetturali sono verificati dai test, non solo documentati.
+
+### File creati
+
+52 moduli nuovi, fra cui `core/{money,types,format,runtimeOptions}.js`,
+`config/{gameplay,rendering,animation}.js`, `runtime/{GameRuntime,GameLoop}.js`,
+`actors/animations/*`, `world/geometry/*`, `world/themes/*`, `world/seededRandom.js`,
+`rendering/{SceneRenderer,CameraController,LightingSystem,WorldIndicators,CaptureEffects,createScene,shaderPatch,PerformanceMonitor}.js`,
+`ui/{createUI,dom,view,labels}.js` e dodici componenti. Più `eslint.config.js`,
+`jsconfig.json`, `playwright.config.js`, `docs/ARCHITECTURE.md` e questo documento.
+
+### File rimossi
+
+`src/ui.js`, `src/sceneManager.js`, `src/districtGeometry.js`, `src/cityThemes.js`
+(sostituiti dalle rispettive suddivisioni).
+
+### File spostati
+
+`gameMath`, `gameState`, `format` → `core/`; `mapLayout`, `cityEffects`, `CityTile`,
+`CityStream`, `TrafficController`, `neonDistrict` → `world/`; `voxelModels` →
+`rendering/`; `characterController` → `actors/`; `multiplierReel`, `bootScreen` → `ui/`.
+`cops-and-robbers.html` → `cops-and-robbers.html`.
+
+### Test aggiunti
+
+Da 64 a **103** test Node, più **12** controlli nel browser.
+
+Nuovi file: `money`, `runtime`, `ui` (jsdom sul vero `index.html`), `shaderPatch`,
+`quality`, `seededRandom`, `architecture`, e le tre suite Playwright.
+
+### Breaking change
+
+- `cops-and-robbers.html` si chiama ora `cops-and-robbers.html`: i collegamenti diretti al
+  vecchio nome vanno aggiornati.
+- Nome npm `cops-and-robbers` → `cops-and-robbers` (pacchetto privato).
+- `MIN_BET` / `MAX_BET` non sono più esportati da `gameState.js`, `MAX_CROSSINGS` e
+  `RTP_TARGET` non più da `gameMath.js`: vivono in `config/gameplay.js`.
+
+Gameplay, probabilità, RTP, payout, animazioni, temi, comportamento mobile e movimento
+ridotto sono invariati.
+
+### Considerazioni sulle prestazioni
+
+- Bundle di produzione: 59,5 kB → 67,4 kB (22,99 → 26,02 kB gzip); HTML autonomo
+  770 → 778 KiB. La crescita è dovuta a diagnostica, preset di qualità e guardie degli
+  shader, non alla suddivisione in moduli.
+- Le ottimizzazioni esistenti sono intatte: pixel ratio limitato, `InstancedMesh`,
+  geometria unitaria condivisa, cache dei materiali, tre tile, dispose GPU, animazioni
+  ferme a scheda nascosta.
+- La geometria generata è stata confrontata con l'albero pre-refactor dopo ogni fase che
+  la toccava: **32.656 istanze identiche al bit** su 28 quartieri.
+- Il preset `low` è disponibile per hardware modesto; la profilazione sulla UHD Graphics
+  fisica resta da fare, come già nella roadmap.
+
+### Problemi rimasti
+
+Vedi «Debito tecnico noto» qui sotto: `strict` del type checker ancora disattivato, i due
+fogli di stile sovrapposti, il pool di asset con stato di modulo, la regressione visiva
+non implementata e `vite` fissato con avvisi di `npm audit` sul solo dev server.
+
+### Prossimi sviluppi consigliati
+
+1. **Unificare i due CSS.** È il debito più grande rimasto e l'unico che tocca ciò che si
+   vede: un solo blocco `:root`, una sola scala di breakpoint, cancellazione di ciò che è
+   già ombreggiato. Richiede verifica a schermo.
+2. **Attivare `strictNullChecks`** modulo per modulo, partendo da `core/` e `runtime/`.
+3. **`createVoxelAssetPool()`** con dependency injection, per rendere possibili due scene
+   indipendenti.
+4. **Profilare sulla GPU reale** e, con quei dati, decidere se una qualità adattiva sia
+   utile: i due ganci sono già in posizione.
+5. **Revisione dell'elicottero**, che resta sospesa nella roadmap.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una
