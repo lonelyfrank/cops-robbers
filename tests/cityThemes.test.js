@@ -39,7 +39,11 @@ test('A new accepted round changes theme without consuming extra wager samples',
 test('Every streamed and retiring tile keeps the round theme, with no old tiles after a swap', () => {
   const scene = new THREE.Scene(),
     stream = new CityStream(scene);
-  for (const theme of ['neonTokyo', 'district87', 'neonTokyo']) {
+  for (const theme of /** @type {import('../src/core/types.js').CityThemeId[]} */ ([
+    'neonTokyo',
+    'district87',
+    'neonTokyo',
+  ])) {
     const old = [...stream.tiles.values()].map(({ tile }) => tile);
     stream.reset(theme);
     assert.ok(old.every((tile) => tile.disposed && tile.root.parent === null));

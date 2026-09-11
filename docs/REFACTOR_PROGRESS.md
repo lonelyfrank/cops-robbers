@@ -497,6 +497,51 @@ dei programmi. 97 test verdi.
 
 ---
 
+## Fasi 13 e 14 — CityTile e CityStream: cosa **non** è stato diviso
+
+**CityTile (fase 13).** Valutata e lasciata come aggregate. Il file è di 190 righe e ha
+una sola responsabilità coerente: possedere materiali, buffer e ciclo di vita di un
+diorama. Le due estrazioni suggerite dalla specifica — `SignalSystem` e
+`RevealController` — sarebbero oggi rispettivamente ~20 e ~15 righe fortemente accoppiate
+al dirty tracking dei materiali: dividerle produrrebbe tre file che si scambiano lo stesso
+stato, non tre responsabilità. La specifica dice di separare «solo se la complessità
+attuale lo giustifica»: non lo giustifica. Aggiunti i tipi.
+
+**CityStream (fase 14).** Non riscritto, come richiesto. Preservati finestra di tre
+distretti, al massimo un distretto in uscita, pulizia immediata delle tile extra,
+sincronizzazione sulla posizione reale del ladro, movimento ridotto e ciclo di vita.
+Aggiunti tipi (`TileEntry`, mappe tipizzate, firme dei metodi) e il moltiplicatore degli
+aloni per i preset di qualità.
+
+**Fase 15 — asset pool.** Non modificato, come indicato dalla specifica per questa fase.
+Lo stato di modulo in `rendering/voxelModels.js` funziona, ha il conteggio dei proprietari
+e rilascia correttamente. Resta come debito aperto documentato in fondo.
+
+---
+
+## Fasi 28 e 29 — Documentazione dell'architettura
+
+Nuovo `docs/ARCHITECTURE.md`: panoramica, diagramma del flusso, regole di dipendenza,
+GameState, runtime, actors, world, rendering, confini dei generatori casuali, proprietà
+delle risorse, interfaccia, qualità, patch agli shader, build, strategia di test e modello
+di sicurezza.
+
+**Le regole di dipendenza non sono solo scritte.** `tests/architecture.test.js` le
+verifica: `core/` resta puro, solo `ui/` e `main.js` cercano elementi nella pagina, world
+e actors non toccano il documento, `rendering/` usa il documento solo per
+`createElement('canvas')`, `config/` non dipende dal comportamento e nessun modulo è
+irraggiungibile da `main.js` (il codice morto fallisce il test).
+
+**Modello di sicurezza (fase 28).** Documentato che il gioco è client-side con crediti
+virtuali e che _questo_ è ciò che lo rende accettabile. Elencati esplicitamente gli
+eventi che lo invaliderebbero — account, classifiche competitive, premi, valuta reale,
+progressione online — e la conseguenza: RNG, payout, saldo e stato economico dovrebbero
+diventare server-authoritative. Nessun backend introdotto ora.
+
+103 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

@@ -5,8 +5,29 @@ import { createCityLighting } from './cityEffects.js';
 import { getCityTheme, DEFAULT_CITY_THEME } from './themes/index.js';
 import { CITY } from '../config/animation.js';
 
-/** Owns precisely three live districts and at most one dissolving old district. */
+/**
+ * Owns precisely three live districts and at most one dissolving old district.
+ *
+ * The window follows the thief's **actual world position**, not the number shown in the
+ * route: a district only changes role when he crosses the connector. Everything a tile
+ * owns — materials, instance buffers, traffic — is released as soon as it retires, while
+ * the shared geometry and the halo texture outlive it.
+ *
+ * @typedef {object} TileEntry
+ * @property {ReturnType<typeof createCityTile>} tile
+ * @property {number} reveal Current emergence in [0, 1].
+ * @property {0 | 1} target Where the reveal is heading.
+ */
 export class CityStream {
+  /**
+   * @param {import('three').Scene} scene
+   * @param {{
+   *   reducedMotion?: boolean,
+   *   createTile?: typeof createCityTile,
+   *   theme?: import('../core/types.js').CityThemeId,
+   *   haloIntensity?: number,
+   * }} [options]
+   */
   constructor(
     scene,
     {
@@ -25,8 +46,10 @@ export class CityStream {
     this.lighting = createCityLighting();
     this.haloTexture = createHaloTexture();
     this.playerX = getStopX(0);
+    /** @type {Map<number, TileEntry>} */
     this.tiles = new Map();
     this.current = 1;
+    /** @type {Map<number, import('../core/types.js').TrafficSignalState>} */
     this.signals = new Map([[1, 'red']]);
     this.caught = false;
     this.disposed = false;
@@ -39,11 +62,16 @@ export class CityStream {
   get previousTile() {
     return this.tiles.get(this.current - 1)?.tile;
   }
-  // Single-signal diagnostic hook; gameplay uses setMovement().
+  /**
+   * Single-signal diagnostic hook; gameplay uses setMovement().
+   * @param {number} n
+   * @param {import('../core/types.js').TrafficSignalState} state
+   */
   setSignal(n, state) {
     this.signals.set(n, state);
     this.tiles.get(n)?.tile.setSignal(state);
   }
+  /** @param {number | null} crossing Junction being crossed, or null when nobody moves. */
   setMovement(crossing) {
     // Open the runner's junction and the patrol's previous junction together.
     this.signals.clear();
@@ -53,14 +81,20 @@ export class CityStream {
     }
     for (const [index, { tile }] of this.tiles) tile.setSignal(this.signals.get(index) ?? 'red');
   }
+  /** @param {boolean} value */
   setCaught(value) {
     this.caught = Boolean(value);
   }
+  /** @param {number} x World position of the thief. */
   setPlayerX(x) {
     const next = getCurrentTile(x);
     this.playerX = x;
     if (next !== this.current) this.sync(next);
   }
+  /**
+   * @param {number} current District the thief occupies.
+   * @param {boolean} [immediate] Skip the emergence, as on a reset.
+   */
   sync(current, immediate = false) {
     if (this.disposed) return;
     const wanted = new Set(getTileWindow(current));
@@ -101,6 +135,7 @@ export class CityStream {
     }
     this.update(0);
   }
+  /** @param {number} dt Seconds since the previous frame. */
   update(dt) {
     if (this.disposed) return;
     const focus = Math.max(0, Math.min(getCrossingX(MAX_CROSSINGS), this.playerX));
@@ -127,6 +162,7 @@ export class CityStream {
       });
     }
   }
+  /** @param {import('../core/types.js').CityThemeId} [themeId] */
   reset(themeId = this.theme.id) {
     const nextTheme = getCityTheme(themeId);
     for (const { tile } of this.tiles.values()) tile.dispose();

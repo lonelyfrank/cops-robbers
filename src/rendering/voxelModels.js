@@ -44,6 +44,15 @@ export function isInstancedMesh(node) {
 }
 
 /**
+ * Narrowing helper for the additive halo sprites.
+ * @param {THREE.Object3D} node
+ * @returns {node is THREE.Sprite}
+ */
+export function isSprite(node) {
+  return /** @type {THREE.Sprite} */ (node).isSprite === true;
+}
+
+/**
  * How many instanced meshes a subtree holds. Used by the diagnostics panel.
  * @param {THREE.Object3D} root
  * @returns {number}

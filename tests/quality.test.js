@@ -7,6 +7,7 @@ import { createPerformanceMonitor } from '../src/rendering/PerformanceMonitor.js
 import { createLightingSystem } from '../src/rendering/LightingSystem.js';
 import { CityStream } from '../src/world/CityStream.js';
 import { getCityTheme } from '../src/world/themes/index.js';
+import { isSprite } from '../src/rendering/voxelModels.js';
 
 test('The default preset is exactly the approved look, and presets only go downwards', () => {
   const high = QUALITY_PRESETS[DEFAULT_QUALITY];
@@ -70,13 +71,13 @@ test('A lower preset drops shadows and decorative lights and dims the halos', ()
   const tile = stream.activeTile;
   const halo = [];
   tile.root.traverse((node) => {
-    if (node.isSprite) halo.push(node.material.opacity);
+    if (isSprite(node)) halo.push(node.material.opacity);
   });
   stream.haloIntensity = 1;
   stream.update(0);
   const full = [];
   tile.root.traverse((node) => {
-    if (node.isSprite) full.push(node.material.opacity);
+    if (isSprite(node)) full.push(node.material.opacity);
   });
   assert.ok(halo.length > 0);
   for (let i = 0; i < halo.length; i++) assert.ok(Math.abs(full[i] * 0.5 - halo[i]) < 1e-9);
