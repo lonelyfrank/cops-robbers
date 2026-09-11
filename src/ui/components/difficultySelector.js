@@ -1,10 +1,10 @@
 /** Alert level panel: the three traffic-light buttons and their protocol caption. */
-import { DIFFICULTIES } from '../../gameMath.js';
+import { DIFFICULTIES } from '../../core/gameMath.js';
 import { el, fieldsetEl, queryAll } from '../dom.js';
 
 /**
  * @param {object} options
- * @param {import('../../gameState.js').GameState} options.game
+ * @param {import('../../core/gameState.js').GameState} options.game
  * @param {(target: EventTarget, type: string, handler: (event: any) => void) => void} options.on
  */
 export function createDifficultySelector({ game, on }) {

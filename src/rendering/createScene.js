@@ -1,7 +1,7 @@
 import { CAMERA } from '../config/rendering.js';
-import { CityStream } from '../cityStream.js';
-import { getCrossingX, getStopX } from '../mapLayout.js';
-import { retainVoxelAssets } from '../voxelModels.js';
+import { CityStream } from '../world/CityStream.js';
+import { getCrossingX, getStopX } from '../world/mapLayout.js';
+import { retainVoxelAssets } from './voxelModels.js';
 import { createCameraController } from './CameraController.js';
 import { createCaptureEffects } from './CaptureEffects.js';
 import { createLightingSystem } from './LightingSystem.js';

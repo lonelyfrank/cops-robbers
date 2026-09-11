@@ -6,9 +6,9 @@
  * the streamed city and the renderer. Keeping it out of `main.js` leaves the entry point
  * as a composition root.
  */
-import { PHASES } from '../gameState.js';
-import { getStopX } from '../mapLayout.js';
-import { getRoundTheme } from '../cityThemes.js';
+import { PHASES } from '../core/gameState.js';
+import { getStopX } from '../world/mapLayout.js';
+import { getRoundTheme } from '../world/cityThemes.js';
 
 /**
  * What the runtime needs from the actors. Declared structurally, so the contract is
@@ -43,7 +43,7 @@ import { getRoundTheme } from '../cityThemes.js';
 
 /**
  * @param {object} deps
- * @param {import('../gameState.js').GameState} deps.game
+ * @param {import('../core/gameState.js').GameState} deps.game
  * @param {SceneSystem} deps.scene
  * @param {ActorSystem} deps.actors
  * @param {EffectOverlay} [deps.overlay] Applies the renderer's effect state to the page.

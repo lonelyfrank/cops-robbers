@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { getCrossingX } from './mapLayout.js';
-import { isInstancedMesh } from './voxelModels.js';
-import { buildDistrictGeometry, SIGNAL_COLORS } from './districtGeometry.js';
+import { isInstancedMesh } from '../rendering/voxelModels.js';
+import { buildDistrictGeometry, SIGNAL_COLORS } from './geometry/districtGeometry.js';
 import {
   createCityLighting,
   applyCityLighting,
@@ -33,7 +33,7 @@ export function createHaloTexture() {
  * @param {{
  *   lighting?: ReturnType<typeof createCityLighting>,
  *   haloTexture?: THREE.Texture,
- *   theme?: import('./core/types.js').CityThemeId,
+ *   theme?: import('../core/types.js').CityThemeId,
  * }} [options]
  */
 export function createCityTile(
@@ -104,13 +104,13 @@ export function createCityTile(
       material.needsUpdate = true;
     }
   }
-  /** @param {import('./core/types.js').TrafficSignalState} state */
+  /** @param {import('../core/types.js').TrafficSignalState} state */
   tile.setSignal = (state) => {
     if (!['off', 'red', 'yellow', 'green'].includes(state))
       throw new RangeError('Stato semaforo non valido.');
     tile.signal = state;
   };
-  /** @param {import('./core/types.js').TileRole} role */
+  /** @param {import('../core/types.js').TileRole} role */
   tile.setRole = (role) => {
     tile.role = role;
   };

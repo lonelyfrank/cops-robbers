@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CAPTURE, LIGHTING } from '../config/rendering.js';
-import { MAIN_ROAD_Z } from '../mapLayout.js';
+import { MAIN_ROAD_Z } from '../world/mapLayout.js';
 
 /**
  * Lights of the occupied district.

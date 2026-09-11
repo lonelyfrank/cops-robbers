@@ -44,7 +44,7 @@ Ogni modulo varia in modo deterministico colori, larghezze e piani degli edifici
 
 La sacca è ancorata alla schiena e cresce gradualmente con incroci e moltiplicatore raggiunti; la crescita rimane contenuta e si azzera alla nuova partita.
 
-Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/mapLayout.js`. Geometria e palette sono in `src/districtGeometry.js`; la finestra di caricamento e la rimozione delle risorse sono in `src/cityStream.js`.
+Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/world/mapLayout.js`. Geometria e palette sono in `src/world/geometry/districtGeometry.js`; la finestra di caricamento e la rimozione delle risorse sono in `src/world/CityStream.js`.
 
 ## Prossimi sviluppi
 
@@ -98,7 +98,7 @@ Saldo e storico sono in memoria: ricaricare la pagina azzera la sessione e ripri
 
 ## Matematica e RTP
 
-Il modulo `src/gameMath.js` non dipende dal DOM, da Three.js o dalla sorgente di casualità.
+Il modulo `src/core/gameMath.js` non dipende dal DOM, da Three.js o dalla sorgente di casualità.
 
 Per l'incrocio `n` (numerazione da 1), nella difficoltà `d`:
 
@@ -133,42 +133,42 @@ Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni 
 
 ## Moduli
 
-| File                                | Responsabilità                                                                                                                       |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/core/money.js`                 | Parsing dei crediti all'italiana, limiti della puntata, clamp e classificazione degli errori. Modulo puro.                           |
-| `src/core/types.js`                 | Vocabolario di dominio in JSDoc per il controllo dei tipi; nessun codice a runtime.                                                  |
-| `src/gameMath.js`                   | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio.                                           |
-| `src/gameState.js`                  | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico.                                                       |
-| `src/rendering/createScene.js`      | Composizione del livello di rendering: ordina i sistemi per frame e non produce DOM.                                                 |
-| `src/rendering/SceneRenderer.js`    | Contesto WebGL, scena, nebbia e dimensione del canvas.                                                                               |
-| `src/rendering/CameraController.js` | Camera ortografica isometrica, inseguimento morbido, zoom della cattura.                                                             |
-| `src/rendering/LightingSystem.js`   | Luci del modulo occupato, in numero fisso; palette per tema.                                                                         |
-| `src/rendering/WorldIndicators.js`  | Indicatore del ladro e moltiplicatore dipinto sull'asfalto.                                                                          |
-| `src/rendering/CaptureEffects.js`   | Luci blu dell'arresto e stato dell'overlay come numeri, senza toccare il documento.                                                  |
-| `src/mapLayout.js`                  | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                        |
-| `src/cityEffects.js`                | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                          |
-| `src/cityThemes.js`                 | Palette e identità dei temi, rotazione per corsa indipendente dagli esiti.                                                           |
-| `src/neonDistrict.js`               | Architettura, insegne e arredo di Neon Tokyo.                                                                                        |
-| `src/districtGeometry.js`           | Geometria dei quartieri, fondazioni, architettura, arredo e vicoli sui due lati della fermata.                                       |
-| `src/format.js`                     | Formatter numerici condivisi, indipendenti dal DOM.                                                                                  |
-| `src/motionPreference.js`           | Unica preferenza di movimento ridotto, aggiornata anche a runtime.                                                                   |
-| `src/cityTile.js`                   | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo.                      |
-| `src/trafficController.js`          | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce.                                               |
-| `src/cityStream.js`                 | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete.                                   |
-| `src/voxelModels.js`                | Geometrie condivise, modelli di ladro/auto e batch di istanze statiche.                                                              |
-| `src/characterController.js`        | Corsa simultanea di ladro e pattuglia, crescita della sacca, accerchiamento da quattro direzioni, fuga nel vicolo.                   |
-| `src/ui/createUI.js`                | Composition root della console: collega azioni, deriva la vista e distribuisce lo snapshot ai componenti.                            |
-| `src/ui/dom.js`                     | Lookup tipizzati degli elementi e un unico ambito di listener annullabile.                                                           |
-| `src/ui/view.js`                    | Derivazione pura della vista e stato della plancia; nessun DOM.                                                                      |
-| `src/ui/labels.js`                  | Testi italiani e regole pure che scelgono messaggio di stato ed etichette di fase.                                                   |
-| `src/ui/components/`                | Un componente per responsabilità: HUD, puntata, allerta, varco, azioni, percorso, risultato, stato, storico, regole ed errore WebGL. |
-| `src/ui/bootScreen.js`              | Presentazione iniziale con barra, blocco dei controlli e pulizia dei timer.                                                          |
-| `src/runtime/GameRuntime.js`        | Orchestrazione fra macchina a stati, attori e scena; dipendenze dichiarate strutturalmente.                                          |
-| `src/runtime/GameLoop.js`           | `requestAnimationFrame`, delta time con clamp, visibilità della scheda, start/stop/dispose.                                          |
-| `src/main.js`                       | Composition root: crea le dipendenze, avvia il runtime e rilascia tutto su errore fatale o HMR.                                      |
-| `src/style.css`                     | Layout, palette, responsività, dialogo e preferenza di movimento ridotto.                                                            |
-| `scripts/buildStandalone.mjs`       | Esportazione della build in un singolo HTML senza richieste esterne.                                                                 |
-| `tests/`                            | Test con il runner nativo di Node.js; nessun framework di test aggiuntivo.                                                           |
+| File                                     | Responsabilità                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/core/money.js`                      | Parsing dei crediti all'italiana, limiti della puntata, clamp e classificazione degli errori. Modulo puro.                           |
+| `src/core/types.js`                      | Vocabolario di dominio in JSDoc per il controllo dei tipi; nessun codice a runtime.                                                  |
+| `src/core/gameMath.js`                   | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio.                                           |
+| `src/core/gameState.js`                  | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico.                                                       |
+| `src/rendering/createScene.js`           | Composizione del livello di rendering: ordina i sistemi per frame e non produce DOM.                                                 |
+| `src/rendering/SceneRenderer.js`         | Contesto WebGL, scena, nebbia e dimensione del canvas.                                                                               |
+| `src/rendering/CameraController.js`      | Camera ortografica isometrica, inseguimento morbido, zoom della cattura.                                                             |
+| `src/rendering/LightingSystem.js`        | Luci del modulo occupato, in numero fisso; palette per tema.                                                                         |
+| `src/rendering/WorldIndicators.js`       | Indicatore del ladro e moltiplicatore dipinto sull'asfalto.                                                                          |
+| `src/rendering/CaptureEffects.js`        | Luci blu dell'arresto e stato dell'overlay come numeri, senza toccare il documento.                                                  |
+| `src/world/mapLayout.js`                 | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                        |
+| `src/world/cityEffects.js`               | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                          |
+| `src/world/cityThemes.js`                | Palette e identità dei temi, rotazione per corsa indipendente dagli esiti.                                                           |
+| `src/world/geometry/neonDistrict.js`     | Architettura, insegne e arredo di Neon Tokyo.                                                                                        |
+| `src/world/geometry/districtGeometry.js` | Geometria dei quartieri, fondazioni, architettura, arredo e vicoli sui due lati della fermata.                                       |
+| `src/core/format.js`                     | Formatter numerici condivisi, indipendenti dal DOM.                                                                                  |
+| `src/motionPreference.js`                | Unica preferenza di movimento ridotto, aggiornata anche a runtime.                                                                   |
+| `src/world/CityTile.js`                  | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo.                      |
+| `src/world/TrafficController.js`         | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce.                                               |
+| `src/world/CityStream.js`                | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete.                                   |
+| `src/rendering/voxelModels.js`           | Geometrie condivise, modelli di ladro/auto e batch di istanze statiche.                                                              |
+| `src/actors/CharacterController.js`      | Corsa simultanea di ladro e pattuglia, crescita della sacca, accerchiamento da quattro direzioni, fuga nel vicolo.                   |
+| `src/ui/createUI.js`                     | Composition root della console: collega azioni, deriva la vista e distribuisce lo snapshot ai componenti.                            |
+| `src/ui/dom.js`                          | Lookup tipizzati degli elementi e un unico ambito di listener annullabile.                                                           |
+| `src/ui/view.js`                         | Derivazione pura della vista e stato della plancia; nessun DOM.                                                                      |
+| `src/ui/labels.js`                       | Testi italiani e regole pure che scelgono messaggio di stato ed etichette di fase.                                                   |
+| `src/ui/components/`                     | Un componente per responsabilità: HUD, puntata, allerta, varco, azioni, percorso, risultato, stato, storico, regole ed errore WebGL. |
+| `src/ui/bootScreen.js`                   | Presentazione iniziale con barra, blocco dei controlli e pulizia dei timer.                                                          |
+| `src/runtime/GameRuntime.js`             | Orchestrazione fra macchina a stati, attori e scena; dipendenze dichiarate strutturalmente.                                          |
+| `src/runtime/GameLoop.js`                | `requestAnimationFrame`, delta time con clamp, visibilità della scheda, start/stop/dispose.                                          |
+| `src/main.js`                            | Composition root: crea le dipendenze, avvia il runtime e rilascia tutto su errore fatale o HMR.                                      |
+| `src/style.css`                          | Layout, palette, responsività, dialogo e preferenza di movimento ridotto.                                                            |
+| `scripts/buildStandalone.mjs`            | Esportazione della build in un singolo HTML senza richieste esterne.                                                                 |
+| `tests/`                                 | Test con il runner nativo di Node.js; nessun framework di test aggiuntivo.                                                           |
 
 Gli stati sono `idle → running → ready`, con ritorno immediato a `running` al clic per proseguire se il semaforo è verde. Il rosso porta a `caught → result`; l'incasso porta a `escaping → result`. Puntata e difficoltà sono bloccate durante una partita. Le guardie impediscono doppi accrediti, doppie partenze e incassi durante un attraversamento o un arresto.
 

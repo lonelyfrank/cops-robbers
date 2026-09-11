@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { IntersectionTraffic } from '../src/trafficController.js';
-import { CharacterController } from '../src/characterController.js';
+import { IntersectionTraffic } from '../src/world/TrafficController.js';
+import { CharacterController } from '../src/actors/CharacterController.js';
 import {
   getCrossingX,
   getStopX,
@@ -10,8 +10,8 @@ import {
   RUNNER_Z,
   MAIN_ROAD_Z,
   TILE_SIZE,
-} from '../src/mapLayout.js';
-import { createCityTile } from '../src/cityTile.js';
+} from '../src/world/mapLayout.js';
+import { createCityTile } from '../src/world/CityTile.js';
 
 test('Cross traffic flows on green, clears the junction on red and queues before the crosswalk', () => {
   const traffic = new IntersectionTraffic(1);

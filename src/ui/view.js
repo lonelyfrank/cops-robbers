@@ -3,8 +3,8 @@
  * snapshot. Pure — no DOM, no Three.js — so the presentation rules are testable.
  */
 import { MAX_CROSSINGS } from '../config/gameplay.js';
-import { calculatePayout, getGreenProbability } from '../gameMath.js';
-import { PHASES } from '../gameState.js';
+import { calculatePayout, getGreenProbability } from '../core/gameMath.js';
+import { PHASES } from '../core/gameState.js';
 
 /**
  * @typedef {import('../core/types.js').GameSnapshot} GameSnapshot

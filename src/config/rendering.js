@@ -5,7 +5,7 @@
  * renderer, the camera controller, the lighting system and the capture effects each
  * read their own block. Values are the ones the approved look was signed off with.
  */
-import { MAIN_ROAD_Z } from '../mapLayout.js';
+import { MAIN_ROAD_Z } from '../world/mapLayout.js';
 
 /** WebGL context and frame budget. */
 export const RENDERER = Object.freeze({

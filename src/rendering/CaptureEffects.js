@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CAPTURE } from '../config/rendering.js';
-import { MAIN_ROAD_Z, sirenPulse } from '../mapLayout.js';
+import { MAIN_ROAD_Z, sirenPulse } from '../world/mapLayout.js';
 
 /**
  * Blue lights of the arrest, and the overlay intensity that goes with them.

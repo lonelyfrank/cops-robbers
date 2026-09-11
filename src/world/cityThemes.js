@@ -1,5 +1,5 @@
 /**
- * @typedef {import('./core/types.js').CityThemeId} CityThemeId
+ * @typedef {import('../core/types.js').CityThemeId} CityThemeId
  * @typedef {(typeof CITY_THEMES)[CityThemeId]} CityTheme
  */
 

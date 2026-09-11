@@ -11,7 +11,7 @@ import { fieldsetEl, el, inputEl, queryAll } from '../dom.js';
 
 /**
  * @param {object} options
- * @param {import('../../gameState.js').GameState} options.game
+ * @param {import('../../core/gameState.js').GameState} options.game
  * @param {(target: EventTarget, type: string, handler: (event: any) => void) => void} options.on
  * @param {() => void} options.onRequestRender Re-render after a refused stake change.
  */

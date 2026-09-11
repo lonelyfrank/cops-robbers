@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, PHASES, secureRandom } from '../src/gameState.js';
-import { calculatePayout } from '../src/gameMath.js';
+import { GameState, PHASES, secureRandom } from '../src/core/gameState.js';
+import { calculatePayout } from '../src/core/gameMath.js';
 import { INITIAL_BALANCE, MAX_BET, MAX_CROSSINGS } from '../src/config/gameplay.js';
 
 const resolveGreen = (game) => {

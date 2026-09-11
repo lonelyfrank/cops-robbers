@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { MAX_CROSSINGS } from '../config/gameplay.js';
-import { getMultiplier } from '../gameMath.js';
-import { formatMultiplier } from '../format.js';
-import { getCrossingX, MAIN_ROAD_Z } from '../mapLayout.js';
+import { getMultiplier } from '../core/gameMath.js';
+import { formatMultiplier } from '../core/format.js';
+import { getCrossingX, MAIN_ROAD_Z } from '../world/mapLayout.js';
 
 /**
  * The two markings drawn on the world itself: the diamond under the thief and the

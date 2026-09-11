@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CityStream } from '../src/cityStream.js';
-import { createCityTile } from '../src/cityTile.js';
-import { getDistrictStyle } from '../src/districtGeometry.js';
-import { CharacterController } from '../src/characterController.js';
-import { isInstancedMesh, unitBox } from '../src/voxelModels.js';
-import { getCityLightLevel } from '../src/cityEffects.js';
+import { CityStream } from '../src/world/CityStream.js';
+import { createCityTile } from '../src/world/CityTile.js';
+import { getDistrictStyle } from '../src/world/geometry/districtGeometry.js';
+import { CharacterController } from '../src/actors/CharacterController.js';
+import { isInstancedMesh, unitBox } from '../src/rendering/voxelModels.js';
+import { getCityLightLevel } from '../src/world/cityEffects.js';
 import { MAX_CROSSINGS } from '../src/config/gameplay.js';
 import {
   getCurrentTile,
@@ -15,7 +15,7 @@ import {
   getStopX,
   TILE_SIZE,
   sirenPulse,
-} from '../src/mapLayout.js';
+} from '../src/world/mapLayout.js';
 
 const settle = (stream) => {
   for (let i = 0; i < 25; i++) stream.update(0.05);
@@ -365,7 +365,7 @@ test('Stable tile materials stay untouched and alpha hashing is used only during
 });
 
 test('Shared voxel assets survive concurrent owners and are recreated after the last scene closes', async () => {
-  const models = await import('../src/voxelModels.js');
+  const models = await import('../src/rendering/voxelModels.js');
   const releaseA = models.retainVoxelAssets(),
     releaseB = models.retainVoxelAssets();
   const geometry = models.unitBox,

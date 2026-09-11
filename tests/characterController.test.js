@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CharacterController } from '../src/characterController.js';
-import { getStopX, getCurrentTile, ALLEY_LOCAL_X } from '../src/mapLayout.js';
-import { getPursuitStopX, getCrossingX, RUNNER_Z, TILE_SIZE } from '../src/mapLayout.js';
-import { getMultiplier } from '../src/gameMath.js';
+import { CharacterController } from '../src/actors/CharacterController.js';
+import { getStopX, getCurrentTile, ALLEY_LOCAL_X } from '../src/world/mapLayout.js';
+import { getPursuitStopX, getCrossingX, RUNNER_Z, TILE_SIZE } from '../src/world/mapLayout.js';
+import { getMultiplier } from '../src/core/gameMath.js';
 
 function finish(controller, duration = 6) {
   for (let t = 0; t < duration; t += 0.025) controller.update(0.025);

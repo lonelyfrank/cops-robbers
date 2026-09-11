@@ -8,7 +8,7 @@ import {
   calculatePayout,
   isGreen,
   buildRiskTable,
-} from '../src/gameMath.js';
+} from '../src/core/gameMath.js';
 import { MAX_CROSSINGS, MIN_GREEN_PROBABILITY, RTP_TARGET } from '../src/config/gameplay.js';
 
 const close = (a, b, epsilon = 1e-12) =>

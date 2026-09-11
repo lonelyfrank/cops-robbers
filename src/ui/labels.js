@@ -5,8 +5,8 @@
  * message rules can be tested without a DOM.
  */
 import { MIN_BET } from '../config/gameplay.js';
-import { formatMoney, formatPercent } from '../format.js';
-import { PHASES } from '../gameState.js';
+import { formatMoney, formatPercent } from '../core/format.js';
+import { PHASES } from '../core/gameState.js';
 
 /** Wording for each rejection reason; the classification itself is pure. */
 export const BET_ERRORS = Object.freeze({

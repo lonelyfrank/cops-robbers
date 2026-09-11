@@ -6,18 +6,18 @@ import {
   MAX_BET,
   MAX_CROSSINGS,
   MIN_BET,
-} from './config/gameplay.js';
+} from '../config/gameplay.js';
 
 /**
- * @typedef {import('./core/types.js').GamePhase} GamePhase
- * @typedef {import('./core/types.js').DifficultyId} DifficultyId
- * @typedef {import('./core/types.js').RoundOutcome} RoundOutcome
- * @typedef {import('./core/types.js').GameHistoryEntry} GameHistoryEntry
- * @typedef {import('./core/types.js').GameSnapshot} GameSnapshot
+ * @typedef {import('./types.js').GamePhase} GamePhase
+ * @typedef {import('./types.js').DifficultyId} DifficultyId
+ * @typedef {import('./types.js').RoundOutcome} RoundOutcome
+ * @typedef {import('./types.js').GameHistoryEntry} GameHistoryEntry
+ * @typedef {import('./types.js').GameSnapshot} GameSnapshot
  * @typedef {Omit<GameSnapshot, 'history'> & { history: GameHistoryEntry[] }} GameData
  */
 
-export { INITIAL_BALANCE } from './config/gameplay.js';
+export { INITIAL_BALANCE } from '../config/gameplay.js';
 export const PHASES = Object.freeze({
   IDLE: 'idle',
   RUNNING: 'running',

@@ -11,7 +11,7 @@ const CAFE_GLYPHS = Object.freeze([
   ['00000', '01110', '00100', '00100', '01110'], // ェ
 ]);
 /**
- * @param {import('./voxelModels.js').VoxelBatch} batch
+ * @param {import('../../rendering/voxelModels.js').VoxelBatch} batch
  * @param {number} x
  * @param {number} y
  * @param {number} z
@@ -39,7 +39,7 @@ function verticalSign(batch, x, y, z, color, ramen, height = 3.1) {
   );
 }
 /**
- * @param {import('./voxelModels.js').VoxelBatch} batch
+ * @param {import('../../rendering/voxelModels.js').VoxelBatch} batch
  * @param {import('./districtGeometry.js').BuildingStyle} config
  * @param {number} variant
  */
@@ -169,7 +169,7 @@ export function neonBuilding(batch, { x, z, width, depth, floors, shop }, varian
       batch.add(0x14283e, [0.4, 0.12, 0.06], [vx, 0.5, front + 0.8]);
     }
 }
-/** @param {import('./voxelModels.js').VoxelBatch} batch */
+/** @param {import('../../rendering/voxelModels.js').VoxelBatch} batch */
 export function neonStreetDetails(batch) {
   // Subway canopy and lit entrance board in the same back-right urban parcel.
   batch.add(0x23334b, [3.4, 0.16, 2.15], [7.5, 2.4, -10]);

@@ -1,8 +1,8 @@
 import './style.css';
 import './consoleShell.css';
-import { GameState } from './gameState.js';
+import { GameState } from './core/gameState.js';
 import { createScene } from './rendering/createScene.js';
-import { CharacterController } from './characterController.js';
+import { CharacterController } from './actors/CharacterController.js';
 import { createUI } from './ui/createUI.js';
 import { createBootScreen } from './ui/bootScreen.js';
 import { createCaptureOverlay } from './ui/components/captureOverlay.js';

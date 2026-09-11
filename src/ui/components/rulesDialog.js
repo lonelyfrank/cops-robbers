@@ -4,13 +4,13 @@
  * The table is rebuilt when the dialog opens, so it always matches the difficulty in
  * force at that moment. A click outside the box closes it, like the native backdrop.
  */
-import { DIFFICULTIES, buildRiskTable } from '../../gameMath.js';
-import { formatPercent } from '../../format.js';
+import { DIFFICULTIES, buildRiskTable } from '../../core/gameMath.js';
+import { formatPercent } from '../../core/format.js';
 import { buttonEl, dialogEl, el } from '../dom.js';
 
 /**
  * @param {object} options
- * @param {import('../../gameState.js').GameState} options.game
+ * @param {import('../../core/gameState.js').GameState} options.game
  * @param {(target: EventTarget, type: string, handler: (event: any) => void) => void} options.on
  */
 export function createRulesDialog({ game, on }) {

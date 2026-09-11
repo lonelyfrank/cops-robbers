@@ -5,9 +5,9 @@
  * change its appearance, so a re-render for an unrelated reason costs nothing.
  */
 import { MAX_CROSSINGS } from '../../config/gameplay.js';
-import { getMultiplier } from '../../gameMath.js';
-import { formatMultiplier } from '../../format.js';
-import { PHASES } from '../../gameState.js';
+import { getMultiplier } from '../../core/gameMath.js';
+import { formatMultiplier } from '../../core/format.js';
+import { PHASES } from '../../core/gameState.js';
 import { el } from '../dom.js';
 
 /** @type {import('../../core/types.js').GamePhase[]} */

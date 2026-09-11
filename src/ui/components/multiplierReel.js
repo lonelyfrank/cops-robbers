@@ -1,6 +1,6 @@
-import { getMultiplier } from '../../gameMath.js';
+import { getMultiplier } from '../../core/gameMath.js';
 import { MAX_CROSSINGS } from '../../config/gameplay.js';
-import { formatMultiplier } from '../../format.js';
+import { formatMultiplier } from '../../core/format.js';
 
 export const REEL_DURATION = 550;
 const EASING = 'cubic-bezier(.22,.8,.22,1)';

@@ -5,7 +5,7 @@
  * update and hands the same snapshot to every component. Each component owns its own
  * elements, its own listeners and its own memoisation.
  */
-import { PHASES } from '../gameState.js';
+import { PHASES } from '../core/gameState.js';
 import { createListenerScope, buttonEl, formEl, query } from './dom.js';
 import { INITIAL_MARKS, deriveView, getBoardState, marksOf } from './view.js';
 import { createActionBar } from './components/actionBar.js';
@@ -21,7 +21,7 @@ import { createStatusLine } from './components/statusLine.js';
 import { createSurveillanceHud } from './components/surveillanceHud.js';
 
 /**
- * @param {import('../gameState.js').GameState} game
+ * @param {import('../core/gameState.js').GameState} game
  * @param {{ start: (amount: number) => void, advance: () => void, cashout: () => void, reset: () => void }} actions
  * @param {{ motion?: import('../core/types.js').MotionPreference }} [options]
  */

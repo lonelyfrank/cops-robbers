@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createTrafficCar, isInstancedMesh, material } from './voxelModels.js';
+import { createTrafficCar, isInstancedMesh, material } from '../rendering/voxelModels.js';
 import { MAIN_ROAD_Z, TILE_SIZE } from './mapLayout.js';
 import { smoothStep } from './cityEffects.js';
 

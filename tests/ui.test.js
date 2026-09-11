@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mountDom, click, type, submit } from './helpers/domHarness.js';
-import { GameState, PHASES } from '../src/gameState.js';
+import { GameState, PHASES } from '../src/core/gameState.js';
 import { createUI } from '../src/ui/createUI.js';
 import { MAX_CROSSINGS } from '../src/config/gameplay.js';
-import { getMultiplier } from '../src/gameMath.js';
+import { getMultiplier } from '../src/core/gameMath.js';
 
 /**
  * Mount the console over the real index.html markup.

@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CITY_THEME_IDS, getCityTheme, getRoundTheme } from '../src/cityThemes.js';
-import { CityStream } from '../src/cityStream.js';
-import { createCityTile } from '../src/cityTile.js';
-import { getCrossingX, getCurrentTile, getStopX } from '../src/mapLayout.js';
-import { isInstancedMesh } from '../src/voxelModels.js';
-import { GameState } from '../src/gameState.js';
+import { CITY_THEME_IDS, getCityTheme, getRoundTheme } from '../src/world/cityThemes.js';
+import { CityStream } from '../src/world/CityStream.js';
+import { createCityTile } from '../src/world/CityTile.js';
+import { getCrossingX, getCurrentTile, getStopX } from '../src/world/mapLayout.js';
+import { isInstancedMesh } from '../src/rendering/voxelModels.js';
+import { GameState } from '../src/core/gameState.js';
 
 test('A new accepted round changes theme without consuming extra wager samples', () => {
   let calls = 0;

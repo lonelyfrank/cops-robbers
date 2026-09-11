@@ -4,7 +4,7 @@
  * Incassa always stays on screen and is only disabled, so the controls do not shift
  * between phases.
  */
-import { formatMoney } from '../../format.js';
+import { formatMoney } from '../../core/format.js';
 import { buttonEl, el } from '../dom.js';
 import { getActionLabels } from '../labels.js';
 

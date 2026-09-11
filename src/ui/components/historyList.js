@@ -2,8 +2,8 @@
  * The last rounds. Positive amounts are the gross cashout, including the stake; the
  * net profit is in the tooltip and in the end-of-round card.
  */
-import { DIFFICULTIES } from '../../gameMath.js';
-import { formatMoney, formatMultiplier } from '../../format.js';
+import { DIFFICULTIES } from '../../core/gameMath.js';
+import { formatMoney, formatMultiplier } from '../../core/format.js';
 import { el } from '../dom.js';
 
 export function createHistoryList() {

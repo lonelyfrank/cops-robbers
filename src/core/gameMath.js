@@ -1,7 +1,7 @@
 /**
  * All probability / payout functions are pure. No Three.js or browser imports.
  * Every tunable number lives in `config/gameplay.js`; this module only applies them.
- * @typedef {import('./core/types.js').DifficultyId} DifficultyId
+ * @typedef {import('./types.js').DifficultyId} DifficultyId
  */
 import {
   DIFFICULTY_DECAY,
@@ -9,7 +9,7 @@ import {
   MAX_CROSSINGS,
   MIN_GREEN_PROBABILITY,
   RTP_TARGET,
-} from './config/gameplay.js';
+} from '../config/gameplay.js';
 
 /** Labels and captions belong to the risk curve, so they sit beside it. */
 export const DIFFICULTIES = Object.freeze({

@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGameLoop } from '../src/runtime/GameLoop.js';
 import { createGameRuntime } from '../src/runtime/GameRuntime.js';
-import { GameState, PHASES } from '../src/gameState.js';
+import { GameState, PHASES } from '../src/core/gameState.js';
 import { MAX_CROSSINGS } from '../src/config/gameplay.js';
-import { getStopX } from '../src/mapLayout.js';
-import { getRoundTheme } from '../src/cityThemes.js';
+import { getStopX } from '../src/world/mapLayout.js';
+import { getRoundTheme } from '../src/world/cityThemes.js';
 
 /**
  * Drive requestAnimationFrame by hand, so a frame time is an input and not a wait.

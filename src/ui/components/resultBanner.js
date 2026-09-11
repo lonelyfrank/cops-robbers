@@ -1,6 +1,6 @@
 /** End-of-round card: gross cashout or the lost stake, never colour alone. */
-import { formatMoney, formatMultiplier } from '../../format.js';
-import { PHASES } from '../../gameState.js';
+import { formatMoney, formatMultiplier } from '../../core/format.js';
+import { PHASES } from '../../core/gameState.js';
 import { el } from '../dom.js';
 
 export function createResultBanner() {

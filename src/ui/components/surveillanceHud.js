@@ -3,9 +3,9 @@
  * the cashable amount and the local clock.
  */
 import { MAX_CROSSINGS } from '../../config/gameplay.js';
-import { formatMoney } from '../../format.js';
-import { PHASES } from '../../gameState.js';
-import { getRoundTheme } from '../../cityThemes.js';
+import { formatMoney } from '../../core/format.js';
+import { PHASES } from '../../core/gameState.js';
+import { getRoundTheme } from '../../world/cityThemes.js';
 import { el, timeEl } from '../dom.js';
 import { createMultiplierReel, getReelValues } from './multiplierReel.js';
 

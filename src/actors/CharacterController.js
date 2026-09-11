@@ -1,4 +1,4 @@
-import { createThief, createPoliceCar } from './voxelModels.js';
+import { createThief, createPoliceCar } from '../rendering/voxelModels.js';
 import {
   getCrossingX,
   getStopX,
@@ -7,8 +7,8 @@ import {
   ROAD_Y,
   TILE_SIZE,
   sirenPulse,
-} from './mapLayout.js';
-import { CHARACTER } from './config/animation.js';
+} from '../world/mapLayout.js';
+import { CHARACTER } from '../config/animation.js';
 
 const clamp = (value) => Math.max(0, Math.min(1, value));
 const smooth = (value) => {

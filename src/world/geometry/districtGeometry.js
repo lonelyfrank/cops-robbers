@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { VoxelBatch, box } from './voxelModels.js';
-import { TILE_SIZE, MAIN_ROAD_Z, ALLEY_LOCAL_X } from './mapLayout.js';
-import { IntersectionTraffic } from './trafficController.js';
-import { getCityTheme, DEFAULT_CITY_THEME } from './cityThemes.js';
+import { VoxelBatch, box } from '../../rendering/voxelModels.js';
+import { TILE_SIZE, MAIN_ROAD_Z, ALLEY_LOCAL_X } from '../mapLayout.js';
+import { IntersectionTraffic } from '../TrafficController.js';
+import { getCityTheme, DEFAULT_CITY_THEME } from '../cityThemes.js';
 import { neonBuilding, neonStreetDetails } from './neonDistrict.js';
 export const SIGNAL_COLORS = Object.freeze({ red: 0xff365b, yellow: 0xffbd3f, green: 0x8bff7e });
 
@@ -22,7 +22,7 @@ export const SIGNAL_COLORS = Object.freeze({ red: 0xff365b, yellow: 0xffbd3f, gr
  * @property {number} [awning]
  *
  * @typedef {object} DistrictStyle
- * @property {import('./core/types.js').CityThemeId} themeId
+ * @property {import('../../core/types.js').CityThemeId} themeId
  * @property {number} amenity
  * @property {number} treeScale
  * @property {BuildingStyle[]} buildings
@@ -39,7 +39,7 @@ function randomFor(index) {
 
 /**
  * @param {number} index
- * @param {import('./core/types.js').CityThemeId} [themeId]
+ * @param {import('../../core/types.js').CityThemeId} [themeId]
  * @returns {DistrictStyle}
  */
 export function getDistrictStyle(index, themeId = DEFAULT_CITY_THEME) {
@@ -345,7 +345,7 @@ function buildFoundation(batch, random) {
  * @param {THREE.Group} root
  * @param {(color: number | string) => THREE.Material} getMaterial
  * @param {THREE.Texture} haloTexture
- * @param {import('./core/types.js').CityThemeId} [themeId]
+ * @param {import('../../core/types.js').CityThemeId} [themeId]
  */
 export function buildDistrictGeometry(
   index,

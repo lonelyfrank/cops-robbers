@@ -5,9 +5,9 @@
  * finished round never leaves the previous probability on screen.
  */
 import { MAX_CROSSINGS, RTP_TARGET } from '../../config/gameplay.js';
-import { getGreenProbability } from '../../gameMath.js';
-import { formatPercent } from '../../format.js';
-import { PHASES } from '../../gameState.js';
+import { getGreenProbability } from '../../core/gameMath.js';
+import { formatPercent } from '../../core/format.js';
+import { PHASES } from '../../core/gameState.js';
 import { el } from '../dom.js';
 
 export function createGateMeter() {

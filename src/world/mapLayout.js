@@ -1,6 +1,6 @@
-import { MAX_CROSSINGS } from './config/gameplay.js';
+import { MAX_CROSSINGS } from '../config/gameplay.js';
 
-/** @typedef {import('./core/types.js').TileRole} TileRole */
+/** @typedef {import('../core/types.js').TileRole} TileRole */
 
 // Each square is a complete diorama: one junction and aligned road connectors.
 export const TILE_SIZE = 26;
