@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CharacterController } from '../src/actors/CharacterController.js';
+import { ANIMATIONS } from '../src/actors/animations/index.js';
 import { getStopX, getCurrentTile, ALLEY_LOCAL_X } from '../src/world/mapLayout.js';
 import { getPursuitStopX, getCrossingX, RUNNER_Z, TILE_SIZE } from '../src/world/mapLayout.js';
 import { getMultiplier } from '../src/core/gameMath.js';
@@ -197,4 +198,22 @@ test('Capture and reset do not restart the shared siren clock', () => {
   c.reset();
   c.update(0, 8.75);
   assert.equal(c.chase.blueLight.intensity, before);
+});
+
+test('Every animation kind resolves to a handler, so adding one cannot grow an if-chain', () => {
+  const c = new CharacterController(new THREE.Scene());
+  for (const kind of Object.keys(ANIMATIONS)) {
+    const handler = ANIMATIONS[kind];
+    assert.equal(typeof handler.create, 'function', `${kind} builds its own state`);
+    assert.equal(typeof handler.update, 'function', `${kind} applies its own pose`);
+  }
+  // The three public entry points cover the three kinds, and each one is dispatched.
+  c.run(1);
+  assert.equal(c.animation.kind, 'run');
+  assert.ok(c.animation.duration > 0);
+  c.caught(1);
+  assert.equal(c.animation.kind, 'caught');
+  c.escape();
+  assert.equal(c.animation.kind, 'alley');
+  assert.deepEqual(Object.keys(ANIMATIONS).sort(), ['alley', 'caught', 'run']);
 });

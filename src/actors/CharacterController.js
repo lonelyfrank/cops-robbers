@@ -1,23 +1,26 @@
 import { createThief, createPoliceCar } from '../rendering/voxelModels.js';
-import {
-  getCrossingX,
-  getStopX,
-  getPursuitStopX,
-  RUNNER_Z,
-  ROAD_Y,
-  TILE_SIZE,
-  sirenPulse,
-} from '../world/mapLayout.js';
+import { getPursuitStopX, getStopX, RUNNER_Z, ROAD_Y, sirenPulse } from '../world/mapLayout.js';
 import { CHARACTER } from '../config/animation.js';
+import { ANIMATIONS } from './animations/index.js';
+import { clamp } from './animations/easing.js';
 
-const clamp = (value) => Math.max(0, Math.min(1, value));
-const smooth = (value) => {
-  const p = clamp(value);
-  return p * p * (3 - 2 * p);
-};
-const lerp = (a, b, t) => a + (b - a) * t;
+/**
+ * One animation in flight. The kind, the clock and the callback belong to the
+ * controller; every other field is created by the handler for that kind.
+ *
+ * @typedef {{
+ *   kind: import('../core/types.js').AnimationKind,
+ *   elapsed: number,
+ *   duration: number,
+ *   onComplete?: () => void,
+ * } & Record<string, any>} ActiveAnimation
+ */
 
 export class CharacterController {
+  /**
+   * @param {import('three').Scene} scene
+   * @param {{ reducedMotion?: boolean }} [options]
+   */
   constructor(scene, { reducedMotion = false } = {}) {
     this.thief = createThief();
     this.police = createPoliceCar();
@@ -38,6 +41,7 @@ export class CharacterController {
       ...this.flankPolice.map((car) => car.root),
     );
     this.reducedMotion = reducedMotion;
+    /** @type {ActiveAnimation | null} */
     this.animation = null;
     this.time = 0;
     this.arrested = false;
@@ -46,6 +50,7 @@ export class CharacterController {
     this.reset();
   }
   reset() {
+    /** @type {ActiveAnimation | null} */
     this.animation = null;
     this.arrested = false;
     this.thief.root.position.set(getStopX(0), ROAD_Y, RUNNER_Z);
@@ -70,76 +75,52 @@ export class CharacterController {
     this.chase.blueLight.intensity = 0;
     this.chase.redLight.intensity = 0;
   }
+  /**
+   * @param {number} n Junction the green clears.
+   * @param {() => void} [onComplete]
+   */
   run(n, onComplete) {
-    const fromX = this.thief.root.position.x,
-      toX = getStopX(n);
-    const chaseFromX = this.chase.root.position.x,
-      chaseToX = getPursuitStopX(n);
-    const duration = this.reducedMotion
-      ? CHARACTER.reducedRunDuration
-      : Math.max(
-          CHARACTER.runMinDuration,
-          Math.abs(toX - fromX) / CHARACTER.runSpeed,
-          Math.abs(chaseToX - chaseFromX) / CHARACTER.runSpeed,
-        );
-    this.animation = {
-      kind: 'run',
-      elapsed: 0,
-      duration,
-      fromX,
-      toX,
-      chaseFromX,
-      chaseToX,
-      onComplete,
-    };
+    this.#play('run', { crossing: n }, onComplete);
   }
+  /**
+   * @param {number} multiplier
+   * @param {number} crossing
+   */
   setLoot(multiplier, crossing) {
     const growth = crossing * 0.09 + Math.log2(Math.max(1, multiplier)) * 0.16;
     this.lootTarget = 1 + 1.4 * (1 - Math.exp(-growth));
   }
+  /**
+   * @param {number} n Junction the arrest happens on.
+   * @param {() => void} [onComplete]
+   */
   caught(n, onComplete) {
-    const x = getCrossingX(n);
-    this.arrested = true;
-    this.police.root.visible = false;
-    this.police.root.position.set(x + TILE_SIZE * 2, 0.03, RUNNER_Z);
-    this.police.root.rotation.y = -Math.PI / 2;
-    this.flankPolice.forEach((car, i) => {
-      car.root.visible = false;
-      car.root.rotation.y = i === 0 ? 0 : Math.PI;
-      car.root.position.set(x + (i === 0 ? -1.35 : 1.35), 0.03, i === 0 ? -22 : RUNNER_Z + 22);
-    });
-    this.animation = {
-      kind: 'caught',
-      elapsed: 0,
-      duration: this.reducedMotion ? CHARACTER.reducedCaughtDuration : CHARACTER.caughtDuration,
-      handsFrom: this.thief.arms.map((arm) => arm.rotation.z),
-      bodyFrom: this.thief.body.rotation.z,
-      crossingX: x,
-      captureX: x - 0.2,
-      fromX: this.thief.root.position.x,
-      policeFromX: x + TILE_SIZE * 2,
-      chaseFromX: this.chase.root.position.x,
-      onComplete,
-    };
+    this.#play('caught', { crossing: n }, onComplete);
   }
+  /** @param {() => void} [onComplete] */
   escape(onComplete) {
-    this.animation = {
-      kind: 'alley',
+    this.#play('alley', {}, onComplete);
+  }
+  /**
+   * Start one animation. The controller owns the clock and the callback; the handler
+   * owns the choreography.
+   *
+   * @param {import('../core/types.js').AnimationKind} kind
+   * @param {{ crossing?: number }} options
+   * @param {() => void} [onComplete]
+   */
+  #play(kind, options, onComplete) {
+    this.animation = /** @type {ActiveAnimation} */ ({
+      kind,
       elapsed: 0,
-      duration: this.reducedMotion ? CHARACTER.reducedAlleyDuration : CHARACTER.alleyDuration,
-      z: this.thief.root.position.z,
       onComplete,
-    };
+      ...ANIMATIONS[kind].create(this, options),
+    });
   }
-  poseRun(time, strength = 1) {
-    const wave = Math.sin(time * 18) * strength;
-    this.thief.legs[0].rotation.z = wave * 0.73;
-    this.thief.legs[1].rotation.z = -wave * 0.73;
-    this.thief.arms[0].rotation.z = -wave * 0.55;
-    this.thief.arms[1].rotation.z = wave * 0.55;
-    this.thief.body.position.y = Math.abs(wave) * 0.085;
-    this.thief.body.rotation.z = -0.08 * strength;
-  }
+  /**
+   * @param {number} dt Seconds since the previous frame.
+   * @param {number} [elapsed] Shared animation clock; sirens never restart on capture.
+   */
   update(dt, elapsed = this.time + dt) {
     this.time = elapsed;
     this.lootScale +=
@@ -159,51 +140,12 @@ export class CharacterController {
     }
     a.elapsed += dt;
     const p = clamp(a.elapsed / a.duration);
-    if (a.kind === 'run') {
-      this.thief.root.position.x = lerp(a.fromX, a.toX, smooth(p));
-      this.chase.root.position.x = lerp(a.chaseFromX, a.chaseToX, smooth(p));
-      this.poseRun(a.elapsed, smooth(p / 0.12) * (1 - smooth((p - 0.8) / 0.2)));
-    } else if (a.kind === 'caught') {
-      // The thief enters the junction; four cars close a ring from existing roads.
-      this.thief.root.position.x = lerp(a.fromX, a.captureX, smooth(p / 0.32));
-      this.poseRun(a.elapsed, 1 - smooth(p / 0.32));
-      this.chase.root.position.x = lerp(a.chaseFromX, a.captureX - 3.8, smooth((p - 0.05) / 0.75));
-      this.police.root.position.x = lerp(a.policeFromX, a.captureX + 3.6, smooth(p / 0.78));
-      this.police.root.visible = this.police.root.position.x <= a.crossingX + TILE_SIZE * 1.5 - 0.5;
-      const [north, south] = this.flankPolice;
-      north.root.position.z = lerp(-22, RUNNER_Z - 3.4, smooth((p - 0.12) / 0.65));
-      south.root.position.z = lerp(RUNNER_Z + 22, RUNNER_Z + 3.4, smooth((p - 0.22) / 0.6));
-      north.root.visible = north.root.position.z >= -TILE_SIZE / 2 - 1.5;
-      south.root.visible = south.root.position.z <= TILE_SIZE / 2 + 1.5;
-      const handsUp = smooth((p - 0.32) / 0.35);
-      if (p >= 0.32) {
-        this.thief.arms.forEach((arm, i) => {
-          arm.rotation.z = lerp(a.handsFrom[i], -2.65, handsUp);
-        });
-        this.thief.body.rotation.z = lerp(a.bodyFrom, 0.06, handsUp);
-      }
-    } else if (a.kind === 'alley') {
-      this.thief.root.rotation.y = (-Math.PI / 2) * smooth(p * 3);
-      this.thief.root.position.z = lerp(a.z, 12.7, smooth(p));
-      this.poseRun(a.elapsed);
-      this.thief.root.position.y = lerp(ROAD_Y, 0.13, smooth((p - 0.2) / 0.3));
-      if (p > 0.9) this.thief.root.visible = false;
-    }
+    const handler = ANIMATIONS[a.kind];
+    handler.update(this, a, p);
     if (p === 1) {
       // Clear first: completion may synchronously start the next animation.
       this.animation = null;
-      if (a.kind === 'run') {
-        this.thief.root.position.x = a.toX;
-        this.chase.root.position.x = a.chaseToX;
-        this.thief.body.rotation.z = 0;
-        this.thief.body.position.y = 0;
-        this.thief.legs.forEach((leg) => {
-          leg.rotation.z = 0;
-        });
-        this.thief.arms.forEach((arm) => {
-          arm.rotation.z = 0;
-        });
-      }
+      handler.settle?.(this, a);
       a.onComplete?.();
     }
   }

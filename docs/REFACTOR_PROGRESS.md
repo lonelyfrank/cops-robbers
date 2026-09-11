@@ -297,6 +297,49 @@ test verdi.
 
 ---
 
+## Spostamento nei domini
+
+Passaggio meccanico, senza modifiche di comportamento, per far atterrare le fasi
+successive nella cartella giusta: `core/` (gameMath, gameState, format), `world/`
+(mapLayout, cityEffects, cityThemes, CityTile, CityStream, TrafficController,
+`geometry/`), `rendering/` (voxelModels con i sistemi di rendering), `actors/`
+(CharacterController). `main.js` e `motionPreference.js` restano alla radice di `src/`:
+l'entry point e l'unico servizio trasversale del browser.
+
+Gli specificatori di import sono stati riscritti risolvendo ciascuno rispetto alla
+posizione vecchia e ricalcolandolo dalla nuova; una scansione finale conferma che non
+resta alcun riferimento irrisolto.
+
+---
+
+## Fase 11 — Animazioni del personaggio in dispatch
+
+**Motivazione.** `CharacterController.update()` conteneva una catena
+`if (a.kind === 'run') … else if ('caught') … else if ('alley')` destinata a crescere a
+ogni nuova animazione, e il blocco di completamento aveva un ramo specifico per la corsa.
+
+**Modifiche.**
+
+- `src/actors/animations/` con un gestore per animazione: `run.js`, `caught.js`,
+  `alley.js`. Ognuno espone `create` (costruisce il proprio stato), `update` (applica la
+  posa) e facoltativamente `settle` (valori finali esatti).
+- `index.js` espone la tabella `ANIMATIONS` e il tipo `AnimationHandler`.
+- `easing.js` raccoglie `clamp`, `smooth`, `lerp` e `poseRun`, prima metodi o funzioni
+  private del controller.
+- Il controller conserva modelli, orologio condiviso, sacca, sirene e stato di arresto, e
+  possiede **solo** clock e callback: `#play(kind, options, onComplete)` crea, `update`
+  smista. Aggiungere un'animazione non tocca più `update`.
+
+**Vincolo rispettato.** Nessuna skeletal animation, nessun glTF, nessun `AnimationMixer`:
+il personaggio resta voxel con pose procedurali.
+
+**Comportamento preservato.** I test esistenti su pose di arresto a 30/60/120 Hz,
+accerchiamento da quattro direzioni, attesa della pattuglia, vicolo a tutti i dodici
+incroci e callback non sovrascritte passano invariati. Un nuovo test verifica che ogni
+`AnimationKind` risolva a un gestore.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una
