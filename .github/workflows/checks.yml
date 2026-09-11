@@ -12,8 +12,31 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm test
       - run: npm run build
       - run: npm run build:standalone
       - run: git diff --exit-code -- cops-and-robbers.html
+
+  browser:
+    # Kept separate: it needs a Chromium download and, without a GPU, the scene renders
+    # in software at a few frames per second. It must not slow down the fast checks.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

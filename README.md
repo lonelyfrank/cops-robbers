@@ -44,7 +44,7 @@ Ogni modulo varia in modo deterministico colori, larghezze e piani degli edifici
 
 La sacca è ancorata alla schiena e cresce gradualmente con incroci e moltiplicatore raggiunti; la crescita rimane contenuta e si azzera alla nuova partita.
 
-Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/mapLayout.js`. Geometria e palette sono in `src/districtGeometry.js`; la finestra di caricamento e la rimozione delle risorse sono in `src/cityStream.js`.
+Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/world/mapLayout.js`. Geometria e palette sono in `src/world/geometry/`; la finestra di caricamento e la rimozione delle risorse sono in `src/world/CityStream.js`.
 
 ## Prossimi sviluppi
 
@@ -65,17 +65,35 @@ Per provare il gioco senza installazione, apri **cops-and-robbers.html** in un b
 
 ## Comandi disponibili
 
-| Comando                    | Risultato                                                               |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                          |
-| `npm run lint`             | Verifica la formattazione con Prettier (non è analisi statica ESLint).  |
-| `npm run format`           | Applica lo stile condiviso ai sorgenti; esclude build e memoria locale. |
-| `npm test`                 | Test deterministici della matematica, dello stato e delle animazioni.   |
-| `npm run build`            | Build statica di produzione nella cartella `dist/`.                     |
-| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.             |
-| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                       |
+| Comando                    | Risultato                                                                |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `npm run dev`              | Server di sviluppo Vite con accesso dalla LAN.                           |
+| `npm run lint`             | Analisi statica ESLint (flat config) su sorgenti, test e script.         |
+| `npm run typecheck`        | Controlla i tipi dei file `.js` con JSDoc e `checkJs`.                   |
+| `npm run format`           | Applica lo stile condiviso ai sorgenti; esclude build e memoria locale.  |
+| `npm run format:check`     | Verifica la formattazione con Prettier senza modificare i file.          |
+| `npm test`                 | Test deterministici di matematica, stato, animazioni e interfaccia.      |
+| `npm run test:e2e`         | Controlli nel browser con Playwright su Chromium (richiede il download). |
+| `npm run build`            | Build statica di produzione nella cartella `dist/`.                      |
+| `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.              |
+| `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                        |
 
 La normale build `dist/` va servita via HTTP. Per l'apertura diretta da disco, usa l'HTML autonomo. Dopo modifiche ai sorgenti, rigenera entrambe le build se vuoi distribuirle aggiornate.
+
+## Qualità di rendering e diagnostica
+
+Il gioco parte con il preset **high**, che corrisponde esattamente alla resa approvata: pixel ratio limitato a 1,6, ombre attive con mappa da 1024 px, antialiasing, aloni e luci decorative al massimo. I preset si scelgono con un parametro esplicito nell'indirizzo:
+
+| Indirizzo         | Effetto                                                                 |
+| ----------------- | ----------------------------------------------------------------------- |
+| `?quality=high`   | Predefinito. Nessuna differenza rispetto alla versione precedente.      |
+| `?quality=medium` | Pixel ratio 1,3, ombre da 768 px, aloni all'85%.                        |
+| `?quality=low`    | Pixel ratio 1, ombre disattivate, niente luci decorative, aloni al 60%. |
+| `?debug=1`        | Mostra il pannello di diagnostica in basso a destra.                    |
+
+La qualità **non** viene dedotta dallo user agent: lo stesso browser gira su hardware molto diversi. Il pannello di diagnostica riporta FPS, tempo di frame, frame peggiore, draw call, triangoli, geometrie, texture, programmi compilati, tile vive e numero di `InstancedMesh`. È disattivato per impostazione predefinita e aggiorna il testo una volta ogni trenta frame, per non falsare la misura che sta mostrando.
+
+Il semaforo resta sempre illuminato a ogni preset: è informazione di gioco, non decorazione.
 
 ## Come si gioca
 
@@ -90,11 +108,11 @@ Tutti i comandi funzionano con touch, mouse e tastiera tramite i normali pulsant
 
 Lo storico mostra le ultime 8 partite. Per le vittorie, l'importo positivo è l'**incasso lordo**, comprensivo della puntata; l'utile netto appare nel riepilogo di fine partita. Per le sconfitte è mostrata la puntata persa e il moltiplicatore raggiunto prima del rosso.
 
-Saldo e storico sono in memoria: ricaricare la pagina azzera la sessione e ripristina 1.000 CR. **Ripristina 1.000 CR** è disponibile tra le partite. Non sono presenti pagamenti, account, backend, telemetria, font remoti o asset scaricati a runtime.
+Saldo e storico sono in memoria: ricaricare la pagina azzera la sessione e ripristina 1.000 CR. Il modello è interamente client-side con crediti virtuali; se in futuro venissero introdotti account, classifiche competitive, premi o progressione online, RNG, payout e saldo dovrebbero diventare server-authoritative. I criteri sono in [architettura](docs/ARCHITECTURE.md#15-modello-di-sicurezza). **Ripristina 1.000 CR** è disponibile tra le partite. Non sono presenti pagamenti, account, backend, telemetria, font remoti o asset scaricati a runtime.
 
 ## Matematica e RTP
 
-Il modulo `src/gameMath.js` non dipende dal DOM, da Three.js o dalla sorgente di casualità.
+Il modulo `src/core/gameMath.js` non dipende dal DOM, da Three.js o dalla sorgente di casualità.
 
 Per l'incrocio `n` (numerazione da 1), nella difficoltà `d`:
 
@@ -113,7 +131,7 @@ P(n, d) × M_totale(n, d) = 0.96
 | Pavimento difensivo della probabilità  | `0.12`                   | `MIN_GREEN_PROBABILITY`, `gameMath.js`     |
 | Incroci massimi                        | `12`                     | `MAX_CROSSINGS`, `gameMath.js`             |
 | Saldo iniziale                         | `100000` centesimi di CR | `INITIAL_BALANCE`, `gameState.js`          |
-| Puntata minima / massima               | `1 / 1000000 CR`         | `MIN_BET` / `MAX_BET`, `gameState.js`      |
+| Puntata minima / massima               | `1 / 1000000 CR`         | `MIN_BET` / `MAX_BET`, `core/money.js`     |
 
 Il pavimento `MIN_GREEN_PROBABILITY = 0.12` è una guardia difensiva per future curve: nel percorso attuale non interviene; la probabilità più bassa è circa 0,316 (difficile, dodicesimo incrocio).
 
@@ -125,33 +143,46 @@ Il saldo è un intero in centesimi di CR. `calculatePayout()` arrotonda per dife
 
 La formula vale per una strategia di incasso a ciascun traguardo consentito. Non garantisce un risultato su una singola partita o una breve sessione. Non è permesso incassare prima del primo verde o durante una risoluzione.
 
-Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni clic valido di partenza o avanzamento. Non ci sono risultati predefiniti né correzioni basate sul saldo o sulle sconfitte precedenti. La decorazione della città usa un generatore separato con seme fisso: non influenza i semafori. Nei test il generatore viene iniettato nel costruttore di `GameState`.
+Gli esiti usano `crypto.getRandomValues()` e un solo campione uniforme per ogni clic valido di partenza o avanzamento. Non ci sono risultati predefiniti né correzioni basate sul saldo o sulle sconfitte precedenti. La decorazione della città usa un generatore separato con seme fisso (`src/world/seededRandom.js`): non influenza i semafori. I due generatori restano distinti per costruzione, così il seme della città può essere riprodotto senza toccare le probabilità. Nei test il generatore viene iniettato nel costruttore di `GameState`.
 
 ## Moduli
 
-| File                          | Responsabilità                                                                                                                            |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/gameMath.js`             | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio.                                                |
-| `src/gameState.js`            | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico.                                                            |
-| `src/sceneManager.js`         | Renderer WebGL, camera isometrica, illuminazione del modulo occupato, riflesso blu e moltiplicatore sull'asfalto tra le strisce pedonali. |
-| `src/mapLayout.js`            | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                             |
-| `src/cityEffects.js`          | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                               |
-| `src/cityThemes.js`           | Palette e identità dei temi, rotazione per corsa indipendente dagli esiti.                                                                |
-| `src/neonDistrict.js`         | Architettura, insegne e arredo di Neon Tokyo.                                                                                             |
-| `src/bootScreen.js`           | Presentazione iniziale con barra, blocco dei controlli e pulizia dei timer.                                                               |
-| `src/districtGeometry.js`     | Geometria dei quartieri, fondazioni, architettura, arredo e vicoli sui due lati della fermata.                                            |
-| `src/format.js`               | Formatter numerici condivisi, indipendenti dal DOM.                                                                                       |
-| `src/motionPreference.js`     | Unica preferenza di movimento ridotto, aggiornata anche a runtime.                                                                        |
-| `src/cityTile.js`             | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo.                           |
-| `src/trafficController.js`    | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce.                                                    |
-| `src/cityStream.js`           | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete.                                        |
-| `src/voxelModels.js`          | Geometrie condivise, modelli di ladro/auto e batch di istanze statiche.                                                                   |
-| `src/characterController.js`  | Corsa simultanea di ladro e pattuglia, crescita della sacca, accerchiamento da quattro direzioni, fuga nel vicolo.                        |
-| `src/ui.js`                   | Overlay, input, validazione, pulsanti, storico e regole.                                                                                  |
-| `src/main.js`                 | Collegamento tra stato e scena e ciclo `requestAnimationFrame`.                                                                           |
-| `src/style.css`               | Layout, palette, responsività, dialogo e preferenza di movimento ridotto.                                                                 |
-| `scripts/buildStandalone.mjs` | Esportazione della build in un singolo HTML senza richieste esterne.                                                                      |
-| `tests/`                      | Test con il runner nativo di Node.js; nessun framework di test aggiuntivo.                                                                |
+| File                                     | Responsabilità                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/core/money.js`                      | Parsing dei crediti all'italiana, limiti della puntata, clamp e classificazione degli errori. Modulo puro.                           |
+| `src/core/types.js`                      | Vocabolario di dominio in JSDoc per il controllo dei tipi; nessun codice a runtime.                                                  |
+| `src/core/gameMath.js`                   | Probabilità, sopravvivenza cumulata, moltiplicatori, arrotondamento e tabella del rischio.                                           |
+| `src/core/gameState.js`                  | Macchina a stati, validazione puntate, saldo, risoluzione immediata e storico.                                                       |
+| `src/rendering/createScene.js`           | Composizione del livello di rendering: ordina i sistemi per frame e non produce DOM.                                                 |
+| `src/rendering/SceneRenderer.js`         | Contesto WebGL, scena, nebbia e dimensione del canvas.                                                                               |
+| `src/rendering/CameraController.js`      | Camera ortografica isometrica, inseguimento morbido, zoom della cattura.                                                             |
+| `src/rendering/LightingSystem.js`        | Luci del modulo occupato, in numero fisso; palette per tema.                                                                         |
+| `src/rendering/WorldIndicators.js`       | Indicatore del ladro e moltiplicatore dipinto sull'asfalto.                                                                          |
+| `src/rendering/CaptureEffects.js`        | Luci blu dell'arresto e stato dell'overlay come numeri, senza toccare il documento.                                                  |
+| `src/world/mapLayout.js`                 | Dimensioni dei moduli, raccordi stradali, fermate, modulo occupato e pulsazione delle sirene.                                        |
+| `src/world/cityEffects.js`               | Gradiente luminoso condiviso nello spazio e sequenza base/oggetti per comparsa e scomparsa.                                          |
+| `src/world/cityThemes.js`                | Palette e identità dei temi, rotazione per corsa indipendente dagli esiti.                                                           |
+| `src/world/geometry/neonDistrict.js`     | Architettura, insegne e arredo di Neon Tokyo.                                                                                        |
+| `src/world/geometry/districtGeometry.js` | Geometria dei quartieri, fondazioni, architettura, arredo e vicoli sui due lati della fermata.                                       |
+| `src/core/format.js`                     | Formatter numerici condivisi, indipendenti dal DOM.                                                                                  |
+| `src/motionPreference.js`                | Unica preferenza di movimento ridotto, aggiornata anche a runtime.                                                                   |
+| `src/world/CityTile.js`                  | Costruzione del diorama quadrato, edifici, vegetazione, lampioni, semafori e materiali indipendenti per modulo.                      |
+| `src/world/TrafficController.js`         | Auto perpendicolari, precedenze, sgombero dell’incrocio e arresto prima delle strisce.                                               |
+| `src/world/CityStream.js`                | Caricamento di precedente/attuale/prossimo, comparsa, scomparsa e rilascio delle risorse obsolete.                                   |
+| `src/rendering/voxelModels.js`           | Geometrie condivise, modelli di ladro/auto e batch di istanze statiche.                                                              |
+| `src/actors/CharacterController.js`      | Corsa simultanea di ladro e pattuglia, crescita della sacca, accerchiamento da quattro direzioni, fuga nel vicolo.                   |
+| `src/ui/createUI.js`                     | Composition root della console: collega azioni, deriva la vista e distribuisce lo snapshot ai componenti.                            |
+| `src/ui/dom.js`                          | Lookup tipizzati degli elementi e un unico ambito di listener annullabile.                                                           |
+| `src/ui/view.js`                         | Derivazione pura della vista e stato della plancia; nessun DOM.                                                                      |
+| `src/ui/labels.js`                       | Testi italiani e regole pure che scelgono messaggio di stato ed etichette di fase.                                                   |
+| `src/ui/components/`                     | Un componente per responsabilità: HUD, puntata, allerta, varco, azioni, percorso, risultato, stato, storico, regole ed errore WebGL. |
+| `src/ui/bootScreen.js`                   | Presentazione iniziale con barra, blocco dei controlli e pulizia dei timer.                                                          |
+| `src/runtime/GameRuntime.js`             | Orchestrazione fra macchina a stati, attori e scena; dipendenze dichiarate strutturalmente.                                          |
+| `src/runtime/GameLoop.js`                | `requestAnimationFrame`, delta time con clamp, visibilità della scheda, start/stop/dispose.                                          |
+| `src/main.js`                            | Composition root: crea le dipendenze, avvia il runtime e rilascia tutto su errore fatale o HMR.                                      |
+| `src/style.css`                          | Layout, palette, responsività, dialogo e preferenza di movimento ridotto.                                                            |
+| `scripts/buildStandalone.mjs`            | Esportazione della build in un singolo HTML senza richieste esterne.                                                                 |
+| `tests/`                                 | Test con il runner nativo di Node.js; nessun framework di test aggiuntivo.                                                           |
 
 Gli stati sono `idle → running → ready`, con ritorno immediato a `running` al clic per proseguire se il semaforo è verde. Il rosso porta a `caught → result`; l'incasso porta a `escaping → result`. Puntata e difficoltà sono bloccate durante una partita. Le guardie impediscono doppi accrediti, doppie partenze e incassi durante un attraversamento o un arresto.
 
@@ -159,7 +190,7 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 - Tutti gli oggetti sono geometrie voxel generate dal codice. Una piccola texture procedurale condivisa crea gli aloni dei lampioni; nessun asset o servizio remoto.
 - Gli edifici e la decorazione sono raggruppati in `InstancedMesh`; geometrie e materiali dei personaggi sono condivisi.
-- Pixel ratio limitato a 1,6 e shadow map da 1024 px. Una sola luce principale calda segue il modulo occupato. Il numero di luci resta costante mentre la città avanza.
+- Pixel ratio limitato a 1,6 e shadow map da 1024 px nel preset predefinito. Una sola luce principale calda segue il modulo occupato. Il numero di luci resta costante mentre la città avanza.
 - Finestre e materiali urbani condividono un gradiente di luce calcolato sulla posizione nel mondo; semafori e aloni seguono la stessa curva. I moduli adiacenti mantengono una luce soffusa senza salti ai confini.
 - Le sirene sono sincronizzate su una pulsazione morbida di 1,7 Hz; la cattura usa il blu sia sull'auto sia sulla città e sul bordo della scena.
 - La camera segue il ladro con una risposta morbida e rapida. Le corse rallentano vicino alla fermata e le animazioni di arresto e incasso sono brevi. Il pulsante Incassa resta visibile, disabilitato quando non disponibile, per mantenere stabili i comandi. L’angolo in primo piano resta libero da pali che coprirebbero il moltiplicatore. I semafori mostrano colore e gli esiti sono ripetuti nel testo, senza affidarsi al solo colore.
@@ -169,10 +200,12 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 ## Verifica
 
-**62 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
+**103 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. I test dell'interfaccia montano il vero `index.html` in jsdom e verificano puntata, difficoltà, Corri!, Incassa, risultato, percorso, dialogo delle regole, stati disabilitati e rilascio dei listener. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
+
+**12 controlli nel browser** con Playwright (`npm run test:e2e`, dopo `npx playwright install chromium`) verificano avvio WebGL reale, corsa verde, incasso, arresto, nuova partita, ripristino, dialogo delle regole, validazione della puntata, movimento ridotto, rotazione dei temi, preset di qualità e pannello di diagnostica opzionali, più l'assenza di overflow orizzontale su desktop e mobile landscape. Girano in un job CI separato perché, senza GPU, Chromium rasterizza via software a circa **2 fotogrammi al secondo**: la suite impiega alcuni minuti e i timeout sono dimensionati su quel ritmo, non su un frame rate sano.
 
 I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico. Verificati anche la rotazione dei temi, dodici incroci senza mescolanza di tile, il logo nel browser e nell’HTML autonomo offline, la barra iniziale e la puntata centrata.
 
-La workflow `.github/workflows/checks.yml` esegue formattazione, test, build e verifica che l’HTML autonomo committato sia aggiornato. L’esecuzione remota partirà al prossimo push. Dettagli della revisione e limiti delle misure: [revisione tecnica](docs/TECHNICAL_REVIEW.md).
+La workflow `.github/workflows/checks.yml` esegue formattazione, analisi statica, controllo dei tipi, test, build e verifica che l’HTML autonomo committato sia aggiornato. L’esecuzione remota partirà al prossimo push. Struttura del codice, confini fra i livelli, proprietà delle risorse e modello di sicurezza: [architettura](docs/ARCHITECTURE.md). Dettagli della revisione e limiti delle misure: [revisione tecnica](docs/TECHNICAL_REVIEW.md). Avanzamento del refactor architetturale: [progresso](docs/REFACTOR_PROGRESS.md).
 
 Documentazione delle dipendenze: [Vite](https://vite.dev/guide/), [build Vite](https://vite.dev/guide/build), [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html). Vedi `THIRD_PARTY_NOTICES.md` per le licenze incluse.

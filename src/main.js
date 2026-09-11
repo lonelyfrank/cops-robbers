@@ -1,24 +1,34 @@
 import './style.css';
 import './consoleShell.css';
-import { GameState, PHASES } from './gameState.js';
-import { createSceneManager } from './sceneManager.js';
-import { getStopX } from './mapLayout.js';
-import { CharacterController } from './characterController.js';
-import { createUI } from './ui.js';
+import { GameState } from './core/gameState.js';
+import { createScene } from './rendering/createScene.js';
+import { CharacterController } from './actors/CharacterController.js';
+import { createUI } from './ui/createUI.js';
+import { createBootScreen } from './ui/bootScreen.js';
+import { createCaptureOverlay } from './ui/components/captureOverlay.js';
 import { createMotionPreference } from './motionPreference.js';
-import { getRoundTheme } from './cityThemes.js';
-import { createBootScreen } from './bootScreen.js';
+import { createGameLoop } from './runtime/GameLoop.js';
+import { createGameRuntime } from './runtime/GameRuntime.js';
+import { parseRuntimeOptions } from './core/runtimeOptions.js';
+import { createPerformanceMonitor } from './rendering/PerformanceMonitor.js';
+import { createDebugPanel } from './ui/components/debugPanel.js';
+import { countInstancedMeshes } from './rendering/voxelModels.js';
 
+/**
+ * Composition root: build the dependencies, start the runtime, and tear everything
+ * down again on a fatal error or an HMR replacement. The coordination itself lives in
+ * `runtime/GameRuntime.js`, the frame timing in `runtime/GameLoop.js`.
+ */
+const options = parseRuntimeOptions(location.search);
 const game = new GameState();
-const motion = createMotionPreference(),
-  events = new AbortController();
-const canvas = document.getElementById('game-canvas');
+const motion = createMotionPreference();
 const boot = createBootScreen({ motion });
-let unsubscribeScene = () => {};
-let sceneManager,
-  characters,
-  animationFrame,
-  failed = false;
+// One scope for the listeners this module owns, so an HMR replacement drops them all.
+const events = new AbortController();
+const overlay = createCaptureOverlay();
+const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('game-canvas'));
+const stage = /** @type {HTMLElement} */ (document.getElementById('stage'));
+
 const ui = createUI(
   game,
   {
@@ -30,91 +40,91 @@ const ui = createUI(
   { motion },
 );
 
-let previousPhase = '',
-  previousRound = -1;
-function synchronizeScene(s) {
-  if (!sceneManager || failed) return;
-  if (s.round !== previousRound || (s.phase === PHASES.IDLE && previousPhase !== PHASES.IDLE)) {
-    characters.reset();
-    sceneManager.reset(getRoundTheme(s.round).id);
-  }
-  if (s.phase !== previousPhase || s.round !== previousRound) {
-    if (s.phase === PHASES.RUNNING) {
-      characters.run(s.crossing + 1, () => game.finishCrossing());
-    } else if (s.phase === PHASES.CAUGHT) {
-      characters.caught(s.crossing + 1, () => game.finishCaught());
-    } else if (s.phase === PHASES.ESCAPING) {
-      characters.escape(() => game.finishEscape());
-    }
-  }
-  characters.setLoot(s.multiplier, s.crossing);
-  sceneManager.setMovement(s.phase === PHASES.RUNNING ? s.crossing + 1 : null);
-  sceneManager.setPhase(s.phase);
-  sceneManager.setCrossingTarget(s);
-  previousPhase = s.phase;
-  previousRound = s.round;
-}
+let scene, actors, loop, diagnostics;
+let unsubscribe = () => {};
+let unsubscribeMotion = () => {};
+let failed = false;
 
+/**
+ * @param {string} message Shown to the player, in place of the controls.
+ * @param {unknown} [error]
+ */
 function fail(message, error) {
   failed = true;
-  cancelAnimationFrame(animationFrame);
   ui.showError(message);
-  disposeScene();
+  release();
   if (error) console.error('Cops&Robbers:', error);
+}
+
+function release() {
+  events.abort();
+  overlay.clear();
+  diagnostics?.dispose();
+  loop?.dispose();
+  boot.dispose();
+  unsubscribe();
+  unsubscribeMotion();
+  motion.dispose();
+  scene?.dispose();
+}
+
+/**
+ * Frame counters behind `?debug=1`. Off by default and never part of the render path.
+ * @param {ReturnType<typeof createScene>} target
+ */
+function createDiagnostics(target) {
+  const panel = createDebugPanel({ quality: target.quality.id });
+  const monitor = createPerformanceMonitor({
+    getInfo: () => target.info,
+    getTileCount: () => target.stream.tiles.size,
+    getInstancedMeshCount: () => countInstancedMeshes(target.scene),
+  });
+  return {
+    record() {
+      if (monitor.record()) panel.render(monitor.sample);
+    },
+    dispose: () => panel.dispose(),
+  };
 }
 
 async function initialize() {
   // Let the branded loading screen paint before preparing WebGL.
-  await new Promise((resolve) => setTimeout(resolve, 40));
-  if (events.signal.aborted) return;
+  await new Promise((resolve) => {
+    setTimeout(resolve, 40);
+  });
+  if (failed || events.signal.aborted) return;
   try {
-    sceneManager = createSceneManager(canvas, document.getElementById('stage'), { motion });
-    characters = new CharacterController(sceneManager.scene, {
-      reducedMotion: sceneManager.reducedMotion,
+    scene = createScene(canvas, stage, { motion, quality: options.quality });
+    actors = new CharacterController(scene.scene, { reducedMotion: scene.reducedMotion });
+    scene.setThief(actors.thief);
+    unsubscribeMotion = motion.subscribe((reduced) => {
+      actors.reducedMotion = reduced;
     });
-    sceneManager.setThief(characters.thief.root);
-    unsubscribeScene = game.subscribe(synchronizeScene);
-    motion.subscribe((reduced) => {
-      characters.reducedMotion = reduced;
-    });
-    let lastTime = performance.now(),
-      elapsed = 0;
-    const frame = (now) => {
-      if (failed) return;
-      try {
-        // Hidden tabs never advance an animation behind the player.
-        const dt = document.hidden ? 0 : Math.min((now - lastTime) / 1000, 0.05);
-        lastTime = now;
-        if (!document.hidden) {
-          elapsed += dt;
-          characters.update(dt, elapsed);
-          const s = game.snapshot;
-          sceneManager.follow(
-            s.phase === PHASES.RUNNING ? characters.thief.root.position.x : getStopX(s.crossing),
-          );
-          sceneManager.update(dt, elapsed);
+
+    const runtime = createGameRuntime({ game, scene, actors, overlay });
+    unsubscribe = runtime.start();
+    diagnostics = options.debug ? createDiagnostics(scene) : null;
+    const step = diagnostics
+      ? (dt, elapsed) => {
+          runtime.update(dt, elapsed);
+          diagnostics.record();
         }
-        animationFrame = requestAnimationFrame(frame);
-      } catch (error) {
+      : runtime.update;
+    loop = createGameLoop(step, {
+      onError: (error) =>
         fail(
           'La scena si è interrotta. Ricarica per ricominciare la demo con 1.000 crediti virtuali.',
           error,
-        );
-      }
-    };
-    // Render once before enabling a stake, so initialization errors cannot consume it.
-    sceneManager.update(0, 0);
+        ),
+    });
+
+    // Render once before enabling a stake, so an initialization error cannot consume it.
+    scene.update(0, 0);
+    loop.start();
     boot.finish().then((complete) => {
       if (complete && !failed && !events.signal.aborted) ui.setReady(true);
     });
-    animationFrame = requestAnimationFrame(frame);
-    document.addEventListener(
-      'visibilitychange',
-      () => {
-        lastTime = performance.now();
-      },
-      { signal: events.signal },
-    );
+
     canvas.addEventListener(
       'webglcontextlost',
       (event) => {
@@ -134,17 +144,8 @@ async function initialize() {
 }
 void initialize();
 
-function disposeScene() {
-  boot.dispose();
-  events.abort();
-  unsubscribeScene();
-  motion.dispose();
-  sceneManager?.dispose();
-}
-
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
-    cancelAnimationFrame(animationFrame);
     ui.dispose();
-    disposeScene();
+    release();
   });

@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CITY_THEMES, getCityTheme, getRoundTheme } from '../src/cityThemes.js';
-import { CityStream } from '../src/cityStream.js';
-import { createCityTile } from '../src/cityTile.js';
-import { getCrossingX, getCurrentTile, getStopX } from '../src/mapLayout.js';
-import { GameState } from '../src/gameState.js';
+import { CITY_THEME_IDS, getCityTheme, getRoundTheme } from '../src/world/themes/index.js';
+import { CityStream } from '../src/world/CityStream.js';
+import { createCityTile } from '../src/world/CityTile.js';
+import { getCrossingX, getCurrentTile, getStopX } from '../src/world/mapLayout.js';
+import { isInstancedMesh } from '../src/rendering/voxelModels.js';
+import { GameState } from '../src/core/gameState.js';
 
 test('A new accepted round changes theme without consuming extra wager samples', () => {
   let calls = 0;
@@ -32,13 +33,17 @@ test('A new accepted round changes theme without consuming extra wager samples',
     game.resetDemo();
     assert.equal(getRoundTheme(game.snapshot.round), current);
   }
-  assert.throws(() => getCityTheme('unknown'), RangeError);
+  assert.throws(() => getCityTheme(/** @type {any} */ ('unknown')), RangeError);
 });
 
 test('Every streamed and retiring tile keeps the round theme, with no old tiles after a swap', () => {
   const scene = new THREE.Scene(),
     stream = new CityStream(scene);
-  for (const theme of ['neonTokyo', 'district87', 'neonTokyo']) {
+  for (const theme of /** @type {import('../src/core/types.js').CityThemeId[]} */ ([
+    'neonTokyo',
+    'district87',
+    'neonTokyo',
+  ])) {
     const old = [...stream.tiles.values()].map(({ tile }) => tile);
     stream.reset(theme);
     assert.ok(old.every((tile) => tile.disposed && tile.root.parent === null));
@@ -58,7 +63,7 @@ test('Every streamed and retiring tile keeps the round theme, with no old tiles 
 });
 
 test('Themes have different geometry and materials without changing road or alley coordinates', () => {
-  for (const theme of Object.keys(CITY_THEMES))
+  for (const theme of CITY_THEME_IDS)
     for (let n = 1; n <= 12; n++) {
       const x = getStopX(n),
         tile = createCityTile(getCurrentTile(x), { theme });
@@ -71,7 +76,10 @@ test('Themes have different geometry and materials without changing road or alle
         point = new THREE.Vector3();
       tile.root.traverse((mesh) => {
         assert.ok(mesh.matrixWorld.elements.every(Number.isFinite));
-        if (mesh.isInstancedMesh && mesh.material.color.getHex() === 0xc9b994)
+        if (
+          isInstancedMesh(mesh) &&
+          /** @type {THREE.MeshStandardMaterial} */ (mesh.material).color.getHex() === 0xc9b994
+        )
           for (let i = 0; i < mesh.count; i++) {
             mesh.getMatrixAt(i, matrix);
             point.setFromMatrixPosition(matrix).applyMatrix4(mesh.matrixWorld);

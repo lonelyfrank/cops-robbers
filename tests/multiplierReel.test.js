@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getReelValues } from '../src/multiplierReel.js';
-import { GameState } from '../src/gameState.js';
-import { getMultiplier } from '../src/gameMath.js';
+import { getReelValues } from '../src/ui/components/multiplierReel.js';
+import { GameState } from '../src/core/gameState.js';
+import { getMultiplier } from '../src/core/gameMath.js';
 
 test('Reel previews start at 0 / 1 / first multiplier and follow actual cleared crossings', () => {
   const game = new GameState({ random: () => 0 });

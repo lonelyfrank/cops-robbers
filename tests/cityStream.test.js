@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CityStream } from '../src/cityStream.js';
-import { createCityTile } from '../src/cityTile.js';
-import { getDistrictStyle } from '../src/districtGeometry.js';
-import { CharacterController } from '../src/characterController.js';
-import { unitBox } from '../src/voxelModels.js';
-import { getCityLightLevel } from '../src/cityEffects.js';
-import { MAX_CROSSINGS } from '../src/gameMath.js';
+import { CityStream } from '../src/world/CityStream.js';
+import { createCityTile } from '../src/world/CityTile.js';
+import { getDistrictStyle } from '../src/world/geometry/index.js';
+import { CharacterController } from '../src/actors/CharacterController.js';
+import { isInstancedMesh, unitBox } from '../src/rendering/voxelModels.js';
+import { getCityLightLevel } from '../src/world/cityEffects.js';
+import { MAX_CROSSINGS } from '../src/config/gameplay.js';
 import {
   getCurrentTile,
   getTileWindow,
@@ -15,7 +15,7 @@ import {
   getStopX,
   TILE_SIZE,
   sirenPulse,
-} from '../src/mapLayout.js';
+} from '../src/world/mapLayout.js';
 
 const settle = (stream) => {
   for (let i = 0; i < 25; i++) stream.update(0.05);
@@ -207,12 +207,12 @@ test('Diorama batches keep finite transforms, independent per-tile materials and
   a.root.updateMatrixWorld(true);
   a.root.traverse((object) => {
     assert.ok(object.matrixWorld.elements.every(Number.isFinite));
-    if (object.isInstancedMesh) assert.ok(object.instanceMatrix.array.every(Number.isFinite));
+    if (isInstancedMesh(object)) assert.ok(object.instanceMatrix.array.every(Number.isFinite));
   });
   const matrices = (tile) => {
     const result = [];
     tile.root.traverse((mesh) => {
-      if (mesh.isInstancedMesh) result.push(Array.from(mesh.instanceMatrix.array));
+      if (isInstancedMesh(mesh)) result.push(Array.from(mesh.instanceMatrix.array));
     });
     return result;
   };
@@ -300,7 +300,9 @@ test('Every cashout stop aligns with actual alley paving, including crossing twe
     const matrix = new THREE.Matrix4(),
       point = new THREE.Vector3();
     tile.root.traverse((mesh) => {
-      if (!mesh.isInstancedMesh || mesh.material.color.getHex() !== 0xc9b994) return;
+      if (!isInstancedMesh(mesh)) return;
+      if (/** @type {THREE.MeshStandardMaterial} */ (mesh.material).color.getHex() !== 0xc9b994)
+        return;
       for (let i = 0; i < mesh.count; i++) {
         mesh.getMatrixAt(i, matrix);
         point.setFromMatrixPosition(matrix).applyMatrix4(mesh.matrixWorld);
@@ -363,7 +365,7 @@ test('Stable tile materials stay untouched and alpha hashing is used only during
 });
 
 test('Shared voxel assets survive concurrent owners and are recreated after the last scene closes', async () => {
-  const models = await import('../src/voxelModels.js');
+  const models = await import('../src/rendering/voxelModels.js');
   const releaseA = models.retainVoxelAssets(),
     releaseB = models.retainVoxelAssets();
   const geometry = models.unitBox,

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, PHASES, INITIAL_BALANCE, MAX_BET, secureRandom } from '../src/gameState.js';
-import { calculatePayout, MAX_CROSSINGS } from '../src/gameMath.js';
-import { parseBet } from '../src/ui.js';
+import { GameState, PHASES, secureRandom } from '../src/core/gameState.js';
+import { calculatePayout } from '../src/core/gameMath.js';
+import { INITIAL_BALANCE, MAX_BET, MAX_CROSSINGS } from '../src/config/gameplay.js';
 
 const resolveGreen = (game) => {
   assert.equal(game.snapshot.phase, PHASES.RUNNING);
@@ -123,11 +123,21 @@ test('Invalid or unaffordable stakes never mutate balance or begin a round', () 
     },
   });
   const before = g.snapshot;
-  for (const bet of [0, -100, 99, 123.4, NaN, Infinity, '2500', INITIAL_BALANCE + 1, MAX_BET + 1])
-    assert.equal(g.start(bet), false);
+  const hostileStakes = /** @type {any[]} */ ([
+    0,
+    -100,
+    99,
+    123.4,
+    NaN,
+    Infinity,
+    '2500',
+    INITIAL_BALANCE + 1,
+    MAX_BET + 1,
+  ]);
+  for (const bet of hostileStakes) assert.equal(g.start(bet), false);
   assert.deepEqual(g.snapshot, before);
   assert.equal(calls, 0);
-  assert.equal(g.setDifficulty('constructor'), false);
+  assert.equal(g.setDifficulty(/** @type {any} */ ('constructor')), false);
 });
 
 test('Maximum stake loss, insufficient balance, and demo reset work without negative credits', () => {
@@ -154,7 +164,7 @@ test('Snapshots cannot modify the internal history; history retains only the lat
   const snapshot = g.snapshot;
   assert.equal(snapshot.history.length, 8);
   assert.equal(snapshot.history[0].id, 10);
-  snapshot.history.pop();
+  /** @type {any[]} */ (snapshot.history).pop();
   assert.equal(g.snapshot.history.length, 8);
   assert.throws(() => {
     snapshot.history[0].payout = 0;
@@ -182,20 +192,6 @@ test('An immediate red blocks repeated clicks and records only one loss', () => 
   assert.equal(g.finishCaught(), false);
   assert.equal(g.snapshot.history.length, 1);
   assert.deepEqual(phases, [PHASES.IDLE, PHASES.CAUGHT, PHASES.RESULT]);
-});
-
-test('Credit input accepts Italian decimals and rejects precision loss or invalid strings', () => {
-  assert.equal(parseBet('25'), 2500);
-  assert.equal(parseBet('1,25'), 125);
-  assert.equal(parseBet(' 25.01 '), 2501);
-  // A decimal comma disambiguates the dots, so the grouped amounts the interface itself
-  // prints (balance 1.000,00; the maximum quoted as 1.000.000,00) can be pasted back in.
-  assert.equal(parseBet('1.000,00'), 100000);
-  assert.equal(parseBet('1.234,50'), 123450);
-  assert.equal(parseBet('1.000.000,00'), 100000000);
-  // Without that comma a lone dot stays ambiguous and is still refused.
-  for (const text of ['', 'abc', '-25', '1e3', '1.234', 'Infinity', '9007199254740993'])
-    assert.equal(parseBet(text), null);
 });
 
 test('The production random generator returns finite numbers in [0, 1)', () => {

@@ -1,8 +1,12 @@
-/** One live media-query subscription shared by UI and scene for this application mount. */
+/**
+ * One live media-query subscription shared by UI and scene for this application mount.
+ * @returns {Required<import('./core/types.js').MotionPreference>}
+ */
 export function createMotionPreference() {
   const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const events = new AbortController(),
-    listeners = new Set();
+  const events = new AbortController();
+  /** @type {Set<(reduced: boolean) => void>} */
+  const listeners = new Set();
   query.addEventListener(
     'change',
     () => {
