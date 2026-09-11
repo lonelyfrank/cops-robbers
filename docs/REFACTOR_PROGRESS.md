@@ -219,6 +219,45 @@ né `matchMedia`: l'harness li sostituisce con i minimi stub documentati.
 
 ---
 
+## Fasi 7 e 8 — Runtime esplicito e game loop separato
+
+**Motivazione.** `main.js` conteneva `synchronizeScene()`, il ciclo
+`requestAnimationFrame`, il clamp del delta, la gestione della visibilità della scheda,
+la cattura degli errori di frame e il ciclo di vita HMR: 150 righe che erano insieme
+entry point e coordinatore.
+
+**Modifiche.**
+
+- `src/runtime/GameLoop.js` (74 righe): frame, delta time con clamp, scheda nascosta,
+  `start`, `stop`, `dispose`. Non conosce né gioco né UI: chiama solo
+  `update(dt, elapsed)`. Un errore nell'update ferma il ciclo e viene riportato **una
+  sola volta** tramite `onError`.
+- `src/runtime/GameRuntime.js` (93 righe): reagisce agli snapshot e guida attori, città e
+  renderer. Nessuna regola di gioco, nessun rendering proprio.
+- `src/main.js` (116 righe) resta solo composition root: crea le dipendenze, avvia il
+  runtime, rilascia tutto su errore fatale o rimontaggio HMR.
+
+**Decisione architetturale.** `GameRuntime` dichiara le sue dipendenze **strutturalmente**
+(`ActorSystem`, `SceneSystem`), non sulle classi concrete. Il contratto diventa esplicito
+e il runtime è pilotabile in test senza una scena Three.js — che è esattamente ciò che i
+nuovi test fanno. Nessun "God Coordinator": il runtime ha un solo ingresso (`sync`) e un
+solo passo (`update`).
+
+**Comportamento preservato.** Stessi sentinelle (`previousPhase = ''`,
+`previousRound = -1`), stesso ordine reset attori → reset città → animazione, stesso
+clamp a 0,05 s, stessa pausa a scheda nascosta senza recupero del tempo trascorso, stesso
+`AbortController` per i listener di `main.js`, stesso render singolo prima di abilitare la
+puntata.
+
+**Test.** Nuovo `tests/runtime.test.js` (9 test): clamp del frame lungo, scheda nascosta e
+rientro senza salto, `stop()` che annulla il frame in coda, errore riportato una sola
+volta, e i flussi richiesti — verde → corsa → `finishCrossing` → READY; rosso → cattura →
+`finishCaught` → RESULT; incasso → fuga → RESULT; dodicesimo incrocio con incasso
+automatico senza READY pubblico. Ogni flusso verifica **una sola** animazione e **una
+sola** transazione economica. 85 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una
