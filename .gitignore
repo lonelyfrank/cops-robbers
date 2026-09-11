@@ -8,3 +8,5 @@ test-results/
 
 # Memoria di lavoro locale: non pubblicare su GitHub.
 /PROJECT_MEMORY.local.md
+# Bozza locale del README, da riscrivere prima di pubblicarla.
+/README.local.md
