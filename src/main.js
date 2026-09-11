@@ -1,10 +1,11 @@
 import './style.css';
 import './consoleShell.css';
 import { GameState } from './gameState.js';
-import { createSceneManager } from './sceneManager.js';
+import { createScene } from './rendering/createScene.js';
 import { CharacterController } from './characterController.js';
 import { createUI } from './ui/createUI.js';
 import { createBootScreen } from './ui/bootScreen.js';
+import { createCaptureOverlay } from './ui/components/captureOverlay.js';
 import { createMotionPreference } from './motionPreference.js';
 import { createGameLoop } from './runtime/GameLoop.js';
 import { createGameRuntime } from './runtime/GameRuntime.js';
@@ -19,6 +20,7 @@ const motion = createMotionPreference();
 const boot = createBootScreen({ motion });
 // One scope for the listeners this module owns, so an HMR replacement drops them all.
 const events = new AbortController();
+const overlay = createCaptureOverlay();
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('game-canvas'));
 const stage = /** @type {HTMLElement} */ (document.getElementById('stage'));
 
@@ -51,6 +53,7 @@ function fail(message, error) {
 
 function release() {
   events.abort();
+  overlay.clear();
   loop?.dispose();
   boot.dispose();
   unsubscribe();
@@ -66,14 +69,14 @@ async function initialize() {
   });
   if (failed || events.signal.aborted) return;
   try {
-    scene = createSceneManager(canvas, stage, { motion });
+    scene = createScene(canvas, stage, { motion });
     actors = new CharacterController(scene.scene, { reducedMotion: scene.reducedMotion });
-    scene.setThief(actors.thief.root);
+    scene.setThief(actors.thief);
     unsubscribeMotion = motion.subscribe((reduced) => {
       actors.reducedMotion = reduced;
     });
 
-    const runtime = createGameRuntime({ game, scene, actors });
+    const runtime = createGameRuntime({ game, scene, actors, overlay });
     unsubscribe = runtime.start();
     loop = createGameLoop(runtime.update, {
       onError: (error) =>

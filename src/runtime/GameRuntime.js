@@ -32,6 +32,13 @@ import { getRoundTheme } from '../cityThemes.js';
  * @property {(s: import('../core/types.js').GameSnapshot) => void} setCrossingTarget
  * @property {(x: number) => void} follow
  * @property {(dt: number, elapsed: number) => void} update
+ * @property {import('../core/types.js').CaptureState} capture State of the last frame.
+ *
+ * The page-side surface for effects the renderer only describes.
+ *
+ * @typedef {object} EffectOverlay
+ * @property {(state: import('../core/types.js').CaptureState) => void} render
+ * @property {() => void} clear
  */
 
 /**
@@ -39,8 +46,9 @@ import { getRoundTheme } from '../cityThemes.js';
  * @param {import('../gameState.js').GameState} deps.game
  * @param {SceneSystem} deps.scene
  * @param {ActorSystem} deps.actors
+ * @param {EffectOverlay} [deps.overlay] Applies the renderer's effect state to the page.
  */
-export function createGameRuntime({ game, scene, actors }) {
+export function createGameRuntime({ game, scene, actors, overlay }) {
   // Sentinels that make the first snapshot count as a change in every branch.
   let previousPhase = '';
   let previousRound = -1;
@@ -54,6 +62,7 @@ export function createGameRuntime({ game, scene, actors }) {
     if (newRound || (s.phase === PHASES.IDLE && previousPhase !== PHASES.IDLE)) {
       actors.reset();
       scene.reset(getRoundTheme(s.round).id);
+      overlay?.clear();
     }
     if (s.phase !== previousPhase || newRound) {
       if (s.phase === PHASES.RUNNING) actors.run(s.crossing + 1, () => game.finishCrossing());
@@ -80,6 +89,7 @@ export function createGameRuntime({ game, scene, actors }) {
     const s = game.snapshot;
     scene.follow(s.phase === PHASES.RUNNING ? actors.thief.root.position.x : getStopX(s.crossing));
     scene.update(dt, elapsed);
+    overlay?.render(scene.capture);
   }
 
   return {

@@ -258,6 +258,45 @@ sola** transazione economica. 85 test verdi.
 
 ---
 
+## Fasi 9 e 10 — Scena divisa e rendering senza DOM
+
+**Motivazione.** `sceneManager.js` teneva insieme renderer, camera, resize, nebbia,
+illuminazione, CityStream, indicatori, decal del moltiplicatore, sirene, effetti di
+cattura, lampeggio della polizia e dispose. Inoltre leggeva direttamente
+`document.getElementById('police-flash')`.
+
+**Modifiche.**
+
+| File                                | Responsabilità                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
+| `src/rendering/SceneRenderer.js`    | Contesto WebGL, scena, nebbia, `ResizeObserver` e dimensione del canvas.         |
+| `src/rendering/CameraController.js` | Camera ortografica, proiezione al resize, inseguimento morbido, zoom di cattura. |
+| `src/rendering/LightingSystem.js`   | Luci in numero fisso del modulo occupato e palette per tema.                     |
+| `src/rendering/WorldIndicators.js`  | Indicatore del ladro e decal del moltiplicatore sull'asfalto.                    |
+| `src/rendering/CaptureEffects.js`   | Luci blu dell'arresto e **stato** dell'overlay.                                  |
+| `src/rendering/createScene.js`      | Composizione: ordina i sistemi per frame. Nessun wrapper vuoto.                  |
+
+`CityStream` resta nel dominio world, come richiesto.
+
+**Disaccoppiamento DOM / Three.js.** `CaptureEffects` produce
+`{ caught, sirenIntensity, captureIntensity }` e non tocca il documento. Il nuovo
+componente `ui/components/captureOverlay.js` applica l'intensità all'elemento della
+pagina; `GameRuntime` inoltra lo stato dopo ogni frame e azzera l'overlay quando la città
+viene ricostruita, così il lampeggio non sopravvive a una nuova corsa. Nel livello di
+rendering non resta alcun `getElementById`: l'unica chiamata al documento è
+`document.createElement('canvas')` per la texture del decal, cioè una superficie di
+disegno fuori schermo, non un elemento della pagina.
+
+**Attenzione al ciclo di vita.** Nell'ordine di `dispose()` il pool voxel condiviso viene
+rilasciato **prima** di `renderer.dispose()`: invertire i due passaggi lascerebbe i buffer
+GPU senza il listener del renderer che li libera.
+
+**Test.** `tests/runtime.test.js` guadagna un test dedicato: l'overlay riceve l'intensità
+prodotta dal renderer e viene azzerato una volta per ogni ricostruzione della città. 86
+test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

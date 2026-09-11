@@ -167,6 +167,8 @@ function stubWorld() {
     finish: undefined,
   };
   const scene = {
+    /** @type {import('../src/core/types.js').CaptureState} */
+    capture: { caught: false, sirenIntensity: 0, captureIntensity: 0 },
     reset: (theme) => log.push(['scene-reset', theme]),
     setMovement: (n) => log.push(['movement', n]),
     setPhase: (phase) => log.push(['phase', phase]),
@@ -174,7 +176,17 @@ function stubWorld() {
     follow: (x) => log.push(['follow', x]),
     update: () => log.push(['render']),
   };
-  return { actors, scene, log, only: (name) => log.filter(([kind]) => kind === name) };
+  const overlay = {
+    render: (state) => log.push(['overlay', state.captureIntensity]),
+    clear: () => log.push(['overlay-clear']),
+  };
+  return {
+    actors,
+    scene,
+    overlay,
+    log,
+    only: (name) => log.filter(([kind]) => kind === name),
+  };
 }
 
 test('Green run: the runtime animates the crossing and the callback settles it once', () => {
@@ -289,6 +301,36 @@ test('A new round rebuilds the city with the theme of that round, before anythin
   world.actors.finish?.();
   game.advance();
   assert.equal(world.only('scene-reset').length, 2);
+
+  unsubscribe();
+});
+
+test('Capture stays as renderer state: the runtime forwards it, the renderer has no DOM', () => {
+  const world = stubWorld();
+  const game = new GameState({ random: () => 0.999 });
+  const runtime = createGameRuntime({ game, ...world });
+  const unsubscribe = runtime.start();
+
+  runtime.update(0.016, 0.016);
+  assert.deepEqual(world.only('overlay').at(-1), ['overlay', 0]);
+
+  // The arrest lights up: the renderer only reports a number.
+  game.start(2500);
+  world.scene.capture = { caught: true, sirenIntensity: 0.8, captureIntensity: 0.21 };
+  runtime.update(0.016, 0.032);
+  assert.deepEqual(world.only('overlay').at(-1), ['overlay', 0.21]);
+
+  // A new round wipes the flash immediately, without waiting for the next frame.
+  world.actors.finish?.();
+  assert.equal(game.snapshot.phase, PHASES.RESULT);
+  game.start(2500);
+  assert.equal(
+    world.only('overlay-clear').length,
+    world.only('scene-reset').length,
+    'every city rebuild clears the flash exactly once',
+  );
+  const order = world.log.map(([kind]) => kind);
+  assert.ok(order.lastIndexOf('scene-reset') < order.lastIndexOf('overlay-clear'));
 
   unsubscribe();
 });
