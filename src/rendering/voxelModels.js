@@ -44,6 +44,19 @@ export function isInstancedMesh(node) {
 }
 
 /**
+ * How many instanced meshes a subtree holds. Used by the diagnostics panel.
+ * @param {THREE.Object3D} root
+ * @returns {number}
+ */
+export function countInstancedMeshes(root) {
+  let total = 0;
+  root.traverse((node) => {
+    if (isInstancedMesh(node)) total++;
+  });
+  return total;
+}
+
+/**
  * @param {THREE.Object3D} parent
  * @param {Triple} size
  * @param {Triple} position

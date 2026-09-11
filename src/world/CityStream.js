@@ -9,11 +9,18 @@ import { CITY } from '../config/animation.js';
 export class CityStream {
   constructor(
     scene,
-    { reducedMotion = false, createTile = createCityTile, theme = DEFAULT_CITY_THEME } = {},
+    {
+      reducedMotion = false,
+      createTile = createCityTile,
+      theme = DEFAULT_CITY_THEME,
+      haloIntensity = 1,
+    } = {},
   ) {
     this.theme = getCityTheme(theme);
     this.scene = scene;
     this.reducedMotion = reducedMotion;
+    /** Quality multiplier on the street-lamp halos; 1 is the full look. */
+    this.haloIntensity = haloIntensity;
     this.createTile = createTile;
     this.lighting = createCityLighting();
     this.haloTexture = createHaloTexture();
@@ -116,6 +123,7 @@ export class CityStream {
       entry.tile.update(dt, entry.reveal, {
         reducedMotion: this.reducedMotion,
         trafficBlocked: this.caught,
+        haloIntensity: this.haloIntensity,
       });
     }
   }

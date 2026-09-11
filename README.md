@@ -81,6 +81,21 @@ Fino alla versione 1.1 l'HTML autonomo si chiamava `cops-and-robbers.html`. Il f
 
 La normale build `dist/` va servita via HTTP. Per l'apertura diretta da disco, usa l'HTML autonomo. Dopo modifiche ai sorgenti, rigenera entrambe le build se vuoi distribuirle aggiornate.
 
+## Qualità di rendering e diagnostica
+
+Il gioco parte con il preset **high**, che corrisponde esattamente alla resa approvata: pixel ratio limitato a 1,6, ombre attive con mappa da 1024 px, antialiasing, aloni e luci decorative al massimo. I preset si scelgono con un parametro esplicito nell'indirizzo:
+
+| Indirizzo         | Effetto                                                                 |
+| ----------------- | ----------------------------------------------------------------------- |
+| `?quality=high`   | Predefinito. Nessuna differenza rispetto alla versione precedente.      |
+| `?quality=medium` | Pixel ratio 1,3, ombre da 768 px, aloni all'85%.                        |
+| `?quality=low`    | Pixel ratio 1, ombre disattivate, niente luci decorative, aloni al 60%. |
+| `?debug=1`        | Mostra il pannello di diagnostica in basso a destra.                    |
+
+La qualità **non** viene dedotta dallo user agent: lo stesso browser gira su hardware molto diversi. Il pannello di diagnostica riporta FPS, tempo di frame, frame peggiore, draw call, triangoli, geometrie, texture, programmi compilati, tile vive e numero di `InstancedMesh`. È disattivato per impostazione predefinita e aggiorna il testo una volta ogni trenta frame, per non falsare la misura che sta mostrando.
+
+Il semaforo resta sempre illuminato a ogni preset: è informazione di gioco, non decorazione.
+
 ## Come si gioca
 
 1. Il saldo iniziale è di **1.000 CR**. Scegli difficoltà e puntata, poi premi **Corri!**.
@@ -176,7 +191,7 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 - Tutti gli oggetti sono geometrie voxel generate dal codice. Una piccola texture procedurale condivisa crea gli aloni dei lampioni; nessun asset o servizio remoto.
 - Gli edifici e la decorazione sono raggruppati in `InstancedMesh`; geometrie e materiali dei personaggi sono condivisi.
-- Pixel ratio limitato a 1,6 e shadow map da 1024 px. Una sola luce principale calda segue il modulo occupato. Il numero di luci resta costante mentre la città avanza.
+- Pixel ratio limitato a 1,6 e shadow map da 1024 px nel preset predefinito. Una sola luce principale calda segue il modulo occupato. Il numero di luci resta costante mentre la città avanza.
 - Finestre e materiali urbani condividono un gradiente di luce calcolato sulla posizione nel mondo; semafori e aloni seguono la stessa curva. I moduli adiacenti mantengono una luce soffusa senza salti ai confini.
 - Le sirene sono sincronizzate su una pulsazione morbida di 1,7 Hz; la cattura usa il blu sia sull'auto sia sulla città e sul bordo della scena.
 - La camera segue il ladro con una risposta morbida e rapida. Le corse rallentano vicino alla fermata e le animazioni di arresto e incasso sono brevi. Il pulsante Incassa resta visibile, disabilitato quando non disponibile, per mantenere stabili i comandi. L’angolo in primo piano resta libero da pali che coprirebbero il moltiplicatore. I semafori mostrano colore e gli esiti sono ripetuti nel testo, senza affidarsi al solo colore.
@@ -186,7 +201,7 @@ Gli stati sono `idle → running → ready`, con ritorno immediato a `running` a
 
 ## Verifica
 
-**93 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. I test dell'interfaccia montano il vero `index.html` in jsdom e verificano puntata, difficoltà, Corri!, Incassa, risultato, percorso, dialogo delle regole, stati disabilitati e rilascio dei listener. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
+**97 test automatici superati**, oltre alla build di produzione e all'esportazione HTML. I test dell'interfaccia montano il vero `index.html` in jsdom e verificano puntata, difficoltà, Corri!, Incassa, risultato, percorso, dialogo delle regole, stati disabilitati e rilascio dei listener. Copertura: tutte le 36 combinazioni difficoltà/incrocio per l'RTP; incasso uniforme lungo il percorso; arrotondamenti; limiti; confini della probabilità; singolo campionamento al clic; risposta immediata su verde e rosso; perdita e incasso; doppi clic; puntata massima e saldo zero; reset; ultimo incrocio; callback e posizioni finali delle animazioni. I nuovi controlli verificano raccordi fra i moduli, illuminazione tenue dei moduli adiacenti, evidenza del modulo occupato, variazioni deterministiche degli edifici, comparsa e scomparsa, numero massimo di moduli, rilascio delle risorse, lampeggi blu persistenti, reset e movimento ridotto. Includono anche crescita progressiva della sacca, movimento simultaneo della pattuglia, accerchiamento da quattro direzioni, sgombero del traffico durante la cattura e precedenze senza sovrapposizioni al primo e all’ultimo incrocio. Verificano inoltre la continuità della luce, la crescita degli edifici ancorata al terreno, la pavimentazione reale dei vicoli a tutti gli incroci, le pose di arresto a 30/60/120 Hz, l’orologio continuo delle sirene, la notifica finale atomica, il rilascio delle cache condivise e l’assenza di aggiornamenti inutili dei materiali stabili.
 
 I test delle animazioni operano sulle geometrie e trasformazioni Three.js in Node, senza renderer WebGL. Verificati anche in Chromium l’HTML autonomo, la risposta immediata ai clic, incasso, arresto, nuova partita, reset e layout desktop/mobile. Il controllo mobile usa un viewport simulato, non un dispositivo fisico. Verificati anche la rotazione dei temi, dodici incroci senza mescolanza di tile, il logo nel browser e nell’HTML autonomo offline, la barra iniziale e la puntata centrata.
 

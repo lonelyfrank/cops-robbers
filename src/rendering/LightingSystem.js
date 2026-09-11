@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CAPTURE, LIGHTING } from '../config/rendering.js';
+import { CAPTURE, LIGHTING, QUALITY_PRESETS } from '../config/rendering.js';
 import { MAIN_ROAD_Z } from '../world/mapLayout.js';
 
 /**
@@ -10,8 +10,11 @@ import { MAIN_ROAD_Z } from '../world/mapLayout.js';
  * created or destroyed, so the shader programs stay compiled.
  */
 
-/** @param {THREE.Scene} scene */
-export function createLightingSystem(scene) {
+/**
+ * @param {THREE.Scene} scene
+ * @param {import('../config/rendering.js').QualityPreset} [quality]
+ */
+export function createLightingSystem(scene, quality = QUALITY_PRESETS.high) {
   // Cool ambient light keeps adjacent streets readable; the warm key marks the active district.
   scene.add(
     new THREE.HemisphereLight(LIGHTING.ambientSky, LIGHTING.ambientGround, LIGHTING.ambientPower),
@@ -28,8 +31,8 @@ export function createLightingSystem(scene) {
     1,
     2,
   );
-  key.castShadow = true;
-  key.shadow.mapSize.set(LIGHTING.shadowSize, LIGHTING.shadowSize);
+  key.castShadow = quality.shadows;
+  key.shadow.mapSize.set(quality.shadowSize, quality.shadowSize);
   key.shadow.camera.near = 2;
   key.shadow.camera.far = LIGHTING.shadowFar;
   key.shadow.normalBias = LIGHTING.shadowNormalBias;
@@ -44,10 +47,23 @@ export function createLightingSystem(scene) {
   const signalLight = new THREE.PointLight(0xffba39, 0, LIGHTING.signalRange, 2);
   scene.add(signalLight);
 
+  let decorative = quality.decorativeLights;
+
   return {
     key,
     warmLights,
     signalLight,
+    /**
+     * @param {import('../config/rendering.js').QualityPreset} next
+     */
+    setQuality(next) {
+      key.castShadow = next.shadows;
+      key.shadow.mapSize.set(next.shadowSize, next.shadowSize);
+      // Three.js rebuilds the shadow map on the next render when the map is dropped.
+      key.shadow.map?.dispose();
+      key.shadow.map = null;
+      decorative = next.decorativeLights;
+    },
     /**
      * Adopt the palette of a city theme. Called once per round, not per frame.
      * @param {{ keyColor: number, warmColor: number, accentColor: number }} theme
@@ -74,7 +90,7 @@ export function createLightingSystem(scene) {
       for (let i = 0; i < warmLights.length; i++) {
         const [dx, dz] = LIGHTING.warmOffsets[i];
         warmLights[i].position.set(lightX + dx, theme.fillHeight ?? LIGHTING.warmHeight, dz);
-        warmLights[i].intensity = (theme.fillPower ?? LIGHTING.warmPower) * dim;
+        warmLights[i].intensity = decorative ? (theme.fillPower ?? LIGHTING.warmPower) * dim : 0;
       }
       signalLight.position.set(occupiedX + 3.72, 2.8, MAIN_ROAD_Z - 3.1);
       signalLight.color.set(signal === 'green' ? 0x8bff7e : signal === 'red' ? 0xff365b : 0xffbd3f);

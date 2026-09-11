@@ -9,12 +9,17 @@ import { createCaptureOverlay } from './ui/components/captureOverlay.js';
 import { createMotionPreference } from './motionPreference.js';
 import { createGameLoop } from './runtime/GameLoop.js';
 import { createGameRuntime } from './runtime/GameRuntime.js';
+import { parseRuntimeOptions } from './core/runtimeOptions.js';
+import { createPerformanceMonitor } from './rendering/PerformanceMonitor.js';
+import { createDebugPanel } from './ui/components/debugPanel.js';
+import { countInstancedMeshes } from './rendering/voxelModels.js';
 
 /**
  * Composition root: build the dependencies, start the runtime, and tear everything
  * down again on a fatal error or an HMR replacement. The coordination itself lives in
  * `runtime/GameRuntime.js`, the frame timing in `runtime/GameLoop.js`.
  */
+const options = parseRuntimeOptions(location.search);
 const game = new GameState();
 const motion = createMotionPreference();
 const boot = createBootScreen({ motion });
@@ -35,7 +40,7 @@ const ui = createUI(
   { motion },
 );
 
-let scene, actors, loop;
+let scene, actors, loop, diagnostics;
 let unsubscribe = () => {};
 let unsubscribeMotion = () => {};
 let failed = false;
@@ -54,12 +59,33 @@ function fail(message, error) {
 function release() {
   events.abort();
   overlay.clear();
+  diagnostics?.dispose();
   loop?.dispose();
   boot.dispose();
   unsubscribe();
   unsubscribeMotion();
   motion.dispose();
   scene?.dispose();
+}
+
+/**
+ * Frame counters behind `?debug=1`. Off by default and never part of the render path.
+ * @param {ReturnType<typeof createScene>} target
+ */
+function createDiagnostics(target) {
+  const panel = createDebugPanel({ quality: target.quality.id });
+  const monitor = createPerformanceMonitor({
+    getInfo: () => target.info,
+    getTileCount: () => target.stream.tiles.size,
+    getInstancedMeshCount: () => countInstancedMeshes(target.scene),
+  });
+  return {
+    /** @param {number} dt */
+    record(dt) {
+      if (monitor.record(dt)) panel.render(monitor.sample);
+    },
+    dispose: () => panel.dispose(),
+  };
 }
 
 async function initialize() {
@@ -69,7 +95,7 @@ async function initialize() {
   });
   if (failed || events.signal.aborted) return;
   try {
-    scene = createScene(canvas, stage, { motion });
+    scene = createScene(canvas, stage, { motion, quality: options.quality });
     actors = new CharacterController(scene.scene, { reducedMotion: scene.reducedMotion });
     scene.setThief(actors.thief);
     unsubscribeMotion = motion.subscribe((reduced) => {
@@ -78,7 +104,14 @@ async function initialize() {
 
     const runtime = createGameRuntime({ game, scene, actors, overlay });
     unsubscribe = runtime.start();
-    loop = createGameLoop(runtime.update, {
+    diagnostics = options.debug ? createDiagnostics(scene) : null;
+    const step = diagnostics
+      ? (dt, elapsed) => {
+          runtime.update(dt, elapsed);
+          diagnostics.record(dt);
+        }
+      : runtime.update;
+    loop = createGameLoop(step, {
       onError: (error) =>
         fail(
           'La scena si è interrotta. Ricarica per ricominciare la demo con 1.000 crediti virtuali.',

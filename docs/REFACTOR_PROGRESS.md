@@ -457,6 +457,46 @@ bit**. 93 test verdi.
 
 ---
 
+## Fasi 16, 17 e 18 — Qualità, diagnostica e predisposizione adattiva
+
+**Fase 16 — preset di qualità.** `QUALITY_PRESETS` in `config/rendering.js` definisce
+`low`, `medium` e `high`, con pixel ratio, antialiasing, ombre, dimensione della shadow
+map, intensità degli aloni e luci decorative. **`high` è esattamente la resa approvata**,
+quindi il comportamento predefinito non cambia; un test lo verifica esplicitamente.
+
+La selezione è **esplicita** (`?quality=low`), mai dedotta dallo user agent. Il parsing
+vive in `core/runtimeOptions.js`, puro e testato, e ignora valori sconosciuti.
+
+`scene.setQuality(id)` applica a caldo tutto ciò che non richiede un nuovo contesto:
+pixel ratio, ombre, dimensione della mappa, luci di riempimento, aloni. L'antialiasing
+resta fissato alla creazione del contesto, ed è documentato come tale. Il semaforo non
+viene mai spento: è informazione di gioco.
+
+**Fase 17 — pannello prestazioni.** `?debug=1`.
+
+- `rendering/PerformanceMonitor.js`: sola misura, nessun DOM. Media su trenta frame e
+  pubblica FPS, tempo di frame, frame peggiore, draw call, triangoli, geometrie, texture,
+  programmi compilati, tile vive e numero di `InstancedMesh`.
+- `ui/components/debugPanel.js`: costruisce il proprio elemento e porta i propri stili
+  inline, così né il markup di produzione né i due fogli di stile condivisi lo conoscono.
+  Scrive testo solo quando arriva una nuova lettura.
+- Disattivato per impostazione predefinita; la diagnostica non è mai nel percorso di
+  render quando è spenta. Costo sull'HTML autonomo: circa 4 KiB su 778 KiB.
+
+**Fase 18 — predisposizione adattiva.** Nessuna logica aggressiva, come richiesto. Sono
+in posizione i due ganci che servono: una misura reale del tempo di frame
+(`PerformanceMonitor`) e un interruttore a caldo (`scene.setQuality`). Un controller
+adattivo futuro legge la prima e chiama il secondo, senza toccare i sistemi di rendering
+né lo user agent.
+
+**Test.** `tests/quality.test.js`: il preset predefinito coincide con la resa approvata,
+i preset degradano in modo monotono, la qualità è richiesta e mai indovinata, un preset
+basso spegne ombre e luci decorative e attenua gli aloni lasciando acceso il semaforo, il
+monitor pubblica una lettura per finestra e riporta il frame peggiore anche senza elenco
+dei programmi. 97 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

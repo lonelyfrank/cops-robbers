@@ -91,7 +91,8 @@ export function createCityTile(
     lastOpacity = null,
     lastFocus = null,
     lastCapture = null,
-    lastSignal = null;
+    lastSignal = null,
+    lastHalo = 1;
   /**
    * @param {THREE.Material & { opacity: number, alphaHash: boolean }} material
    * @param {number} opacity
@@ -117,9 +118,13 @@ export function createCityTile(
   /**
    * @param {number} dt
    * @param {number} progress Reveal progress in [0, 1].
-   * @param {{ reducedMotion?: boolean, trafficBlocked?: boolean }} [options]
+   * @param {{ reducedMotion?: boolean, trafficBlocked?: boolean, haloIntensity?: number }} [options]
    */
-  tile.update = (dt, progress, { reducedMotion = false, trafficBlocked = false } = {}) => {
+  tile.update = (
+    dt,
+    progress,
+    { reducedMotion = false, trafficBlocked = false, haloIntensity = 1 } = {},
+  ) => {
     progress = reducedMotion ? 1 : progress;
     const reveal = getTileReveal(progress),
       focus = lighting.focusX.value,
@@ -139,14 +144,20 @@ export function createCityTile(
       for (const signal of signals)
         for (const lamp of Object.values(signal.lamps)) setOpacity(lamp.material, reveal.base);
     }
-    if (focus !== lastFocus || capture !== lastCapture || reveal.base !== lastOpacity) {
+    if (
+      focus !== lastFocus ||
+      capture !== lastCapture ||
+      reveal.base !== lastOpacity ||
+      haloIntensity !== lastHalo
+    ) {
       tile.warmth = getCityLightLevel(root.position.x, focus) * capture;
       for (const sprite of halos)
         sprite.material.opacity =
           getCityLightLevel(root.position.x + sprite.position.x, focus) *
           capture *
           reveal.base *
-          0.75;
+          0.75 *
+          haloIntensity;
     }
     tile.crossSignal = !trafficBlocked && tile.signal === 'red' ? 'green' : 'red';
     traffic.update(dt, tile.crossSignal === 'green', reducedMotion, trafficBlocked, reveal.base);
@@ -167,6 +178,7 @@ export function createCityTile(
     lastFocus = focus;
     lastCapture = capture;
     lastSignal = signalKey;
+    lastHalo = haloIntensity;
   };
   tile.dispose = () => {
     if (tile.disposed) return;

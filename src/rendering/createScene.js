@@ -1,4 +1,4 @@
-import { CAMERA } from '../config/rendering.js';
+import { CAMERA, QUALITY_PRESETS, getQualityPreset } from '../config/rendering.js';
 import { CityStream } from '../world/CityStream.js';
 import { getCrossingX, getStopX } from '../world/mapLayout.js';
 import { retainVoxelAssets } from './voxelModels.js';
@@ -17,16 +17,27 @@ import { createWorldIndicators } from './WorldIndicators.js';
  *
  * @param {HTMLCanvasElement} canvas
  * @param {HTMLElement} container
- * @param {{ motion?: import('../core/types.js').MotionPreference }} [options]
+ * @param {{
+ *   motion?: import('../core/types.js').MotionPreference,
+ *   quality?: import('../core/types.js').RenderingQuality,
+ * }} [options]
  */
-export function createScene(canvas, container, { motion = { reduced: false } } = {}) {
+export function createScene(
+  canvas,
+  container,
+  { motion = { reduced: false }, quality = QUALITY_PRESETS.high.id } = {},
+) {
   let disposed = false;
+  let preset = getQualityPreset(quality);
   const camera = createCameraController();
-  const view = createSceneRenderer(canvas, container, camera.resize);
+  const view = createSceneRenderer(canvas, container, camera.resize, preset);
   const releaseVoxelAssets = retainVoxelAssets();
-  const lighting = createLightingSystem(view.scene);
+  const lighting = createLightingSystem(view.scene, preset);
   const capture = createCaptureEffects(view.scene);
-  const stream = new CityStream(view.scene, { reducedMotion: motion.reduced });
+  const stream = new CityStream(view.scene, {
+    reducedMotion: motion.reduced,
+    haloIntensity: preset.haloIntensity,
+  });
   const indicators = createWorldIndicators(view.scene, camera.offset);
 
   let followX = getStopX(0);
@@ -107,6 +118,26 @@ export function createScene(canvas, container, { motion = { reduced: false } } =
     /** Overlay state produced by the last frame; the DOM is never touched here. */
     get capture() {
       return capture.state;
+    },
+    /** Live renderer counters, for the diagnostics panel. */
+    get info() {
+      return view.renderer.info;
+    },
+    get quality() {
+      return preset;
+    },
+    /**
+     * Switch frame budget at runtime. Antialiasing is fixed at context creation, so it
+     * is the one setting a preset change cannot alter; everything else applies at once.
+     * This is the hook an adaptive controller would drive from measured frame times.
+     *
+     * @param {import('../core/types.js').RenderingQuality} next
+     */
+    setQuality(next) {
+      preset = getQualityPreset(next);
+      view.setQuality(preset);
+      lighting.setQuality(preset);
+      stream.haloIntensity = preset.haloIntensity;
     },
     reset,
     update,

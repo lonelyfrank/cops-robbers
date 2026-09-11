@@ -7,16 +7,67 @@
  */
 import { MAIN_ROAD_Z } from '../world/mapLayout.js';
 
-/** WebGL context and frame budget. */
+/** Colour response of the renderer. Independent of the quality budget. */
 export const RENDERER = Object.freeze({
-  /** Upper bound on devicePixelRatio; never raised by a user-agent check. */
-  pixelRatio: 1.6,
-  antialias: true,
-  shadows: true,
   exposure: 1.24,
   background: 0x06132c,
   fogDensity: 0.0065,
 });
+
+/**
+ * Frame budget presets.
+ *
+ * `high` is exactly the approved look, so the default changes nothing. A preset is
+ * chosen explicitly — a query parameter now, a frame-time measurement later — and
+ * **never** from a user agent string: the same browser runs on very different hardware.
+ *
+ * @typedef {import('../core/types.js').RenderingQuality} RenderingQuality
+ * @typedef {(typeof QUALITY_PRESETS)[RenderingQuality]} QualityPreset
+ */
+export const QUALITY_PRESETS = Object.freeze({
+  low: Object.freeze({
+    id: /** @type {RenderingQuality} */ ('low'),
+    /** Upper bound on devicePixelRatio. */
+    pixelRatio: 1,
+    antialias: false,
+    shadows: false,
+    shadowSize: 512,
+    /** Multiplier on the street-lamp halos. */
+    haloIntensity: 0.6,
+    /** The four warm fill lights of the occupied district. */
+    decorativeLights: false,
+  }),
+  medium: Object.freeze({
+    id: /** @type {RenderingQuality} */ ('medium'),
+    pixelRatio: 1.3,
+    antialias: true,
+    shadows: true,
+    shadowSize: 768,
+    haloIntensity: 0.85,
+    decorativeLights: true,
+  }),
+  high: Object.freeze({
+    id: /** @type {RenderingQuality} */ ('high'),
+    pixelRatio: 1.6,
+    antialias: true,
+    shadows: true,
+    shadowSize: 1024,
+    haloIntensity: 1,
+    decorativeLights: true,
+  }),
+});
+
+/** @type {RenderingQuality} */
+export const DEFAULT_QUALITY = 'high';
+
+/**
+ * @param {string | null | undefined} requested
+ * @returns {QualityPreset} The named preset, or the default for anything unknown.
+ */
+export function getQualityPreset(requested) {
+  const id = requested && Object.hasOwn(QUALITY_PRESETS, requested) ? requested : DEFAULT_QUALITY;
+  return QUALITY_PRESETS[/** @type {RenderingQuality} */ (id)];
+}
 
 /** Isometric orthographic camera that follows the thief. */
 export const CAMERA = Object.freeze({
@@ -41,7 +92,6 @@ export const LIGHTING = Object.freeze({
   keyPower: 1950,
   keyRange: 65,
   keyAngle: 0.9,
-  shadowSize: 1024,
   shadowFar: 70,
   shadowNormalBias: 0.055,
   shadowBias: -0.00008,
