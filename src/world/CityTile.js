@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { getCrossingX } from './mapLayout.js';
 import { isInstancedMesh } from '../rendering/voxelModels.js';
-import { buildDistrictGeometry, SIGNAL_COLORS } from './geometry/districtGeometry.js';
+import { buildDistrictGeometry, SIGNAL_COLORS } from './geometry/index.js';
 import {
   createCityLighting,
   applyCityLighting,

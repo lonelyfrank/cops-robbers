@@ -340,6 +340,37 @@ incroci e callback non sovrascritte passano invariati. Un nuovo test verifica ch
 
 ---
 
+## Fase 12 — Geometria dei quartieri divisa
+
+**Motivazione.** `districtGeometry.js` era il file destinato a crescere di più: 501 righe
+con fondazioni, strade, segnaletica, tre tipi di edificio, arredo urbano, alberi,
+lampioni, semafori e composizione.
+
+**Modifiche.**
+
+| File                           | Contenuto                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `geometry/streets.js`          | Fondazione a strati, pavimentazione, carreggiate, cordoli, strisce, vicoli.     |
+| `geometry/buildings.js`        | Edifici in mattoni e scelta dell'architettura del tema.                         |
+| `geometry/urbanProps.js`       | Pensilina/metro/edicola, alberi, aiuole, muretti, panchine, lampioni con alone. |
+| `geometry/trafficLights.js`    | `SIGNAL_COLORS` e la testa del semaforo con le tre lampade individuali.         |
+| `geometry/districtVariants.js` | `randomFor()` e `getDistrictStyle()`: le variazioni deterministiche.            |
+| `geometry/createDistrict.js`   | Composizione: fondazione, edifici, livello strada, traffico.                    |
+| `geometry/neonDistrict.js`     | Invariato.                                                                      |
+| `geometry/index.js`            | **Facade**: `buildDistrictGeometry`, `getDistrictStyle`, `SIGNAL_COLORS`.       |
+
+Il resto del codice continua a usare solo la facade e non conosce l'implementazione.
+
+**Verifica specifica.** L'ordine delle chiamate `batch.add` e il consumo del generatore
+deterministico fanno parte del risultato. Oltre ai test, la geometria è stata confrontata
+con il codice pre-refactor istanziando **28 quartieri** (2 temi × 14 indici) in entrambi
+gli alberi e comparando matrici delle istanze, colori, conteggi, trasformazioni globali,
+posizioni degli aloni e descrittori dei semafori: **32.656 istanze identiche al bit**.
+
+87 test verdi.
+
+---
+
 ## Debito tecnico noto
 
 - `strict: false` nel type checker. L'attivazione di `strictNullChecks` richiede una

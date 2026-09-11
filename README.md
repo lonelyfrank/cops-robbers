@@ -44,7 +44,7 @@ Ogni modulo varia in modo deterministico colori, larghezze e piani degli edifici
 
 La sacca è ancorata alla schiena e cresce gradualmente con incroci e moltiplicatore raggiunti; la crescita rimane contenuta e si azzera alla nuova partita.
 
-Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/world/mapLayout.js`. Geometria e palette sono in `src/world/geometry/districtGeometry.js`; la finestra di caricamento e la rimozione delle risorse sono in `src/world/CityStream.js`.
+Dimensione dei moduli, strada, fermate e frequenza delle sirene sono definiti in `src/world/mapLayout.js`. Geometria e palette sono in `src/world/geometry/`; la finestra di caricamento e la rimozione delle risorse sono in `src/world/CityStream.js`.
 
 ## Prossimi sviluppi
 

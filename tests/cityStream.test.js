@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CityStream } from '../src/world/CityStream.js';
 import { createCityTile } from '../src/world/CityTile.js';
-import { getDistrictStyle } from '../src/world/geometry/districtGeometry.js';
+import { getDistrictStyle } from '../src/world/geometry/index.js';
 import { CharacterController } from '../src/actors/CharacterController.js';
 import { isInstancedMesh, unitBox } from '../src/rendering/voxelModels.js';
 import { getCityLightLevel } from '../src/world/cityEffects.js';

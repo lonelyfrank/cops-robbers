@@ -40,7 +40,7 @@ function verticalSign(batch, x, y, z, color, ramen, height = 3.1) {
 }
 /**
  * @param {import('../../rendering/voxelModels.js').VoxelBatch} batch
- * @param {import('./districtGeometry.js').BuildingStyle} config
+ * @param {import('./districtVariants.js').BuildingStyle} config
  * @param {number} variant
  */
 export function neonBuilding(batch, { x, z, width, depth, floors, shop }, variant) {
