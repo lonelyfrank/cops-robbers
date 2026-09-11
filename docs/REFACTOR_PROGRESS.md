@@ -119,20 +119,20 @@ distribuito conservavano ancora il nome storico.
 
 **Modifiche.**
 
-- `package.json`: `cops-and-robbers` → `cops-and-robbers`, descrizione allineata.
-  Lockfile rigenerato.
-- `cops-and-robbers.html` → `cops-and-robbers.html`, con `git mv`. Aggiornati lo script
-  di build, il controllo CI `git diff --exit-code`, `.prettierignore` e il README.
-- Messaggio di console: `Cops&Robbers:` → `Cops&Robbers:`.
+- `package.json`: nome npm e descrizione allineati a `cops-and-robbers`. Lockfile
+  rigenerato.
+- L'HTML autonomo si chiama ora `cops-and-robbers.html`, rinominato con `git mv`.
+  Aggiornati lo script di build, il controllo CI `git diff --exit-code`,
+  `.prettierignore` e il README.
+- Prefisso dei messaggi di console: `Cops&Robbers:`.
 - Il `<title>` della pagina era già corretto.
 
 **Decisione architetturale.** Nessun alias legacy sul disco. Mantenere una copia del
-vecchio nome duplicherebbe un artefatto generato da 770 KiB nel repository; la cronologia
-Git conserva comunque il percorso precedente. Il README segnala il rinomino a chi avesse
-salvato il vecchio collegamento.
+nome precedente duplicherebbe un artefatto generato da 770 KiB nel repository; la
+cronologia Git conserva comunque il percorso vecchio.
 
-**Breaking change.** Chi distribuiva il link diretto a `cops-and-robbers.html` deve
-aggiornarlo.
+**Breaking change.** Il collegamento diretto all'HTML autonomo cambia percorso: chi lo
+distribuiva deve aggiornarlo.
 
 ---
 
@@ -663,7 +663,7 @@ Il file più grande è `rendering/voxelModels.js` con 227 righe.
 `gameMath`, `gameState`, `format` → `core/`; `mapLayout`, `cityEffects`, `CityTile`,
 `CityStream`, `TrafficController`, `neonDistrict` → `world/`; `voxelModels` →
 `rendering/`; `characterController` → `actors/`; `multiplierReel`, `bootScreen` → `ui/`.
-`cops-and-robbers.html` → `cops-and-robbers.html`.
+L'HTML autonomo prende il nome `cops-and-robbers.html`.
 
 ### Test aggiunti
 
@@ -674,9 +674,9 @@ Nuovi file: `money`, `runtime`, `ui` (jsdom sul vero `index.html`), `shaderPatch
 
 ### Breaking change
 
-- `cops-and-robbers.html` si chiama ora `cops-and-robbers.html`: i collegamenti diretti al
-  vecchio nome vanno aggiornati.
-- Nome npm `cops-and-robbers` → `cops-and-robbers` (pacchetto privato).
+- L'HTML autonomo si chiama ora `cops-and-robbers.html`: i collegamenti diretti al
+  percorso precedente vanno aggiornati.
+- Il pacchetto npm privato si chiama ora `cops-and-robbers`.
 - `MIN_BET` / `MAX_BET` non sono più esportati da `gameState.js`, `MAX_CROSSINGS` e
   `RTP_TARGET` non più da `gameMath.js`: vivono in `config/gameplay.js`.
 

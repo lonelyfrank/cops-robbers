@@ -78,8 +78,6 @@ Per provare il gioco senza installazione, apri **cops-and-robbers.html** in un b
 | `npm run preview`          | Serve la build di produzione, normalmente sulla porta 4173.              |
 | `npm run build:standalone` | Rigenera il singolo file `cops-and-robbers.html`.                        |
 
-Fino alla versione 1.1 l'HTML autonomo si chiamava `cops-and-robbers.html`. Il file è stato rinominato per allinearlo al nome del progetto: i collegamenti al vecchio percorso vanno aggiornati.
-
 La normale build `dist/` va servita via HTTP. Per l'apertura diretta da disco, usa l'HTML autonomo. Dopo modifiche ai sorgenti, rigenera entrambe le build se vuoi distribuirle aggiornate.
 
 ## Qualità di rendering e diagnostica
