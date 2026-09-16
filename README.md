@@ -2,6 +2,8 @@
 
 Prototipo giocabile in browser, completamente client-side (Vite + JavaScript + Three.js). Città voxel notturna in stile CCTV, tre difficoltà, 12 incroci, crediti esclusivamente virtuali.
 
+[🎮 Gioca alla demo](https://cops-robbers.vercel.app/)
+
 ![Schermata di Cops&Robbers: console CCTV, città voxel e comandi di gioco](cops-%26-robbers-screen.png)
 
 ## Cos'è
