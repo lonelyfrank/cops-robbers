@@ -36,7 +36,13 @@ export default defineConfig({
   projects: [
     {
       name: 'desktop',
+      testIgnore: /mobile\.spec\.js/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: 'mobile-portrait',
+      testMatch: /mobile\.spec\.js/,
+      use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 },
     },
     {
       // Layout only: the flows are already covered above, and repeating them here would

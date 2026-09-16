@@ -65,6 +65,7 @@ test('A new round starts after a result, and reset restores the demo', async ({ 
   await expect(page.locator('#result-banner')).toBeVisible();
   await expect(page.locator('#main-button')).toBeEnabled();
 
+  await page.locator('.history-section summary').click();
   await page.locator('#reset-button').click();
   await expect(page.locator('#balance')).toHaveText('1.000,00');
   await expect(page.locator('#bet-input')).toHaveValue('25,00');
@@ -93,4 +94,31 @@ test('The stake field rejects an invalid amount and blocks the run', async ({ pa
   await page.locator('#bet-input').fill('50,00');
   await expect(page.locator('#bet-error')).toBeEmpty();
   await expect(page.locator('#main-button')).toBeEnabled();
+});
+
+test('Bet controls and alert levels update the real run and decision panel', async ({ page }) => {
+  const errors = watchErrors(page);
+  await seedOutcome(page, ALWAYS_GREEN);
+  await openGame(page);
+  await page.locator('[data-bet="increase"]').click();
+  await expect(page.locator('#bet-input')).toHaveValue('26,00');
+  await page.locator('[data-bet="decrease"]').click();
+  await page.locator('[data-bet="half"]').click();
+  await expect(page.locator('#bet-input')).toHaveValue('12,50');
+  await page.locator('[data-bet="double"]').click();
+  await page.locator('[data-bet="max"]').click();
+  await expect(page.locator('#bet-input')).toHaveValue('1000,00');
+  await page.locator('#bet-input').fill('25,00');
+  await page.locator('[data-difficulty="hard"]').click();
+  await expect(page.locator('[data-difficulty="hard"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#main-button').click();
+  await expect(page.locator('#cashout-button')).toBeEnabled();
+  await expect(page.locator('#balance')).toHaveText('975,00');
+  await expect(page.locator('#potential')).toHaveText('25,26');
+  await expect(page.locator('#multiplier-reel')).toHaveAttribute('data-current', '1,01');
+  await expect(page.locator('#camera-label')).toHaveText('CAM 02');
+  await page.locator('#cashout-button').click();
+  await expect(page.locator('#result-banner')).toBeVisible();
+  await expect(page.locator('#balance')).toHaveText('1.000,26');
+  expect(errors).toEqual([]);
 });

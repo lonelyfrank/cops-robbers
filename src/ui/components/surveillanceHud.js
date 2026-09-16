@@ -3,7 +3,7 @@
  * the cashable amount and the local clock.
  */
 import { MAX_CROSSINGS } from '../../config/gameplay.js';
-import { formatMoney } from '../../core/format.js';
+import { formatMoney, formatMultiplier } from '../../core/format.js';
 import { PHASES } from '../../core/gameState.js';
 import { getRoundTheme } from '../../world/themes/index.js';
 import { el, timeEl } from '../dom.js';
@@ -25,7 +25,7 @@ export function createSurveillanceHud({ motion = { reduced: false } } = {}) {
   const district = el('district-name');
   const cameraLabel = el('camera-label');
   const monitorUnit = el('monitor-unit');
-  const payoutPreview = el('payout-preview');
+  const payoutMultiplier = el('payout-multiplier');
   const potentialLabel = el('potential-label');
   const potential = el('potential');
   const crossingCount = el('crossing-count');
@@ -60,13 +60,15 @@ export function createSurveillanceHud({ motion = { reduced: false } } = {}) {
       district.textContent = getRoundTheme(s.round).name.toLocaleUpperCase('it-IT');
       cameraLabel.textContent = `CAM ${pad(pendingCrossing)}`;
       monitorUnit.textContent = pad(pendingCrossing);
-      payoutPreview.hidden = !(
-        decision ||
-        s.phase === PHASES.ESCAPING ||
-        (s.phase === PHASES.RESULT && s.payout > 0)
-      );
-      potentialLabel.textContent = decision ? 'Puoi incassare' : 'Incasso accreditato';
-      potential.textContent = formatMoney(decision ? cashable : s.payout);
+      const inRun = decision || s.phase === PHASES.RUNNING;
+      const earned = inRun && s.crossing > 0 ? cashable : s.payout;
+      potentialLabel.textContent = decision
+        ? 'Puoi incassare'
+        : s.payout > 0
+          ? 'Incasso accreditato'
+          : 'Nessuna vincita disponibile';
+      potential.textContent = formatMoney(earned);
+      payoutMultiplier.textContent = `${formatMultiplier(s.multiplier)}×`;
       crossingCount.textContent = `${pad(s.crossing)} / ${MAX_CROSSINGS}`;
     },
     dispose() {

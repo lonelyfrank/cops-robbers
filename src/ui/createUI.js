@@ -19,6 +19,7 @@ import { createRouteDisplay } from './components/routeDisplay.js';
 import { createRulesDialog } from './components/rulesDialog.js';
 import { createStatusLine } from './components/statusLine.js';
 import { createSurveillanceHud } from './components/surveillanceHud.js';
+import { createConsoleMenu } from './components/consoleMenu.js';
 
 /**
  * @param {import('../core/gameState.js').GameState} game
@@ -46,6 +47,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
   const status = createStatusLine();
   const history = createHistoryList();
   const rules = createRulesDialog({ game, on });
+  const menu = createConsoleMenu({ on, openRules: rules.open, motion });
   const errorOverlay = createErrorOverlay({ on });
 
   on(form, 'submit', (event) => {
@@ -105,6 +107,7 @@ export function createUI(game, actions, { motion = { reduced: false } } = {}) {
     },
     dispose() {
       hud.dispose();
+      menu.dispose();
       rules.dispose();
       abort();
       unsubscribe();

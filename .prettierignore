@@ -1,7 +1,9 @@
 node_modules/
 dist/
 cops-and-robbers.html
-PROJECT_MEMORY.local.md
+*.local.md
+.agents/
+.codex/
 package-lock.json
 playwright-report/
 test-results/

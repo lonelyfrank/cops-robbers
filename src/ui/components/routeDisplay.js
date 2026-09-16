@@ -53,6 +53,8 @@ export function createRouteDisplay({ motion = { reduced: false } } = {}) {
         step.multi.textContent = `${multiplier}×`;
         step.item.className = 'route-step';
         step.item.classList.toggle('is-current', n === s.crossing);
+        if (n === s.crossing) step.item.setAttribute('aria-current', 'step');
+        else step.item.removeAttribute('aria-current');
         step.item.classList.toggle('is-arriving', n === s.crossing && arrived);
         step.item.classList.toggle('is-passed', n < s.crossing);
         step.item.classList.toggle(
@@ -66,7 +68,17 @@ export function createRouteDisplay({ motion = { reduced: false } } = {}) {
         );
         step.item.setAttribute(
           'aria-label',
-          `Incrocio ${n}, moltiplicatore ${multiplier}${n <= s.crossing ? ', superato' : ''}`,
+          `Incrocio ${n}, moltiplicatore ${multiplier}, ${
+            step.item.classList.contains('is-caught')
+              ? 'arresto'
+              : n === s.crossing
+                ? 'attuale, superato'
+                : n < s.crossing
+                  ? 'completato'
+                  : step.item.classList.contains('is-next')
+                    ? 'prossimo'
+                    : 'futuro'
+          }`,
         );
       }
       if (changedPhase && s.crossing > 0) {
