@@ -14,6 +14,7 @@ export function createGateMeter() {
   const label = el('gate-label');
   const probability = el('gate-probability');
   const meter = el('gate-meter');
+  const display = meter.closest('.gate-display');
   const rtp = el('rtp-label');
   rtp.textContent = `${Math.round(RTP_TARGET * 100)}%`;
 
@@ -39,6 +40,7 @@ export function createGateMeter() {
       meter.style.setProperty('--gate-fill', `${chance * 100}%`);
       meter.setAttribute('aria-valuenow', (chance * 100).toFixed(1));
       meter.hidden = complete;
+      display.setAttribute('data-risk', chance >= 0.75 ? 'low' : chance >= 0.5 ? 'medium' : 'high');
     },
   };
 }

@@ -108,6 +108,49 @@ test('The stake shortcuts halve, double and max out inside the balance', (t) => 
   assert.equal(c.game.snapshot.bet, 100000);
 });
 
+test('Stake step buttons share validation and clamp to the stake and balance limits', (t) => {
+  const c = mountConsole(t);
+  const step = (name) => click(c.document.querySelector(`[data-bet="${name}"]`));
+  step('increase');
+  assert.equal(c.game.snapshot.bet, 2600);
+  step('decrease');
+  assert.equal(c.game.snapshot.bet, 2500);
+  type(c.id('bet-input'), '1,00');
+  step('decrease');
+  assert.equal(c.game.snapshot.bet, 100);
+  step('max');
+  step('increase');
+  assert.equal(c.game.snapshot.bet, 100000);
+  submit(c.id('game-controls'));
+  step('decrease');
+  assert.equal(c.game.snapshot.stake, 100000);
+});
+
+test('Decision panel shows real earnings, risk and progression through settlement and reset', (t) => {
+  const c = mountConsole(t);
+  assert.equal(c.id('potential').textContent, '0,00');
+  click(c.document.querySelector('[data-difficulty="hard"]'));
+  submit(c.id('game-controls'));
+  c.game.finishCrossing();
+  assert.equal(c.id('potential').textContent, '25,26');
+  assert.equal(c.id('payout-multiplier').textContent, '1,01×');
+  assert.equal(c.id('route').children[0].getAttribute('aria-current'), 'step');
+  for (let i = 1; i < 7; i++) {
+    c.game.advance();
+    c.game.finishCrossing();
+    if (i === 3) assert.equal(c.id('gate-meter').closest('.gate-display').dataset.risk, 'medium');
+  }
+  assert.equal(c.id('gate-meter').closest('.gate-display').dataset.risk, 'high');
+  const earned = c.id('potential').textContent;
+  click(c.id('cashout-button'));
+  c.game.finishEscape();
+  assert.equal(c.id('potential').textContent, earned);
+  click(c.id('reset-button'));
+  assert.equal(c.id('potential').textContent, '0,00');
+  assert.equal(c.id('payout-multiplier').textContent, '1,00×');
+  assert.equal(c.id('gate-meter').closest('.gate-display').dataset.risk, 'low');
+});
+
 test('Selecting an alert level updates the pressed state, the caption and the curve', (t) => {
   const c = mountConsole(t);
   const hard = c.document.querySelector('[data-difficulty="hard"]');
@@ -204,6 +247,22 @@ test('Resetting the demo restores the opening stake and a fatal error locks the 
   assert.equal(c.id('webgl-error').hidden, false);
   assert.equal(c.id('webgl-error-text').textContent, 'Contesto perso.');
   assert.equal(c.id('main-button').disabled, true);
+});
+
+test('The portable menu opens the existing rules and is released with the UI', (t) => {
+  const c = mountConsole(t);
+  click(c.id('menu-button'));
+  assert.equal(c.id('console-menu').open, true);
+  click(c.id('menu-rules'));
+  assert.equal(c.id('console-menu').open, false);
+  assert.equal(c.id('rules-dialog').open, true);
+  assert.equal(c.id('risk-table-body').children.length, MAX_CROSSINGS);
+  click(c.id('close-rules'));
+  click(c.id('menu-button'));
+  c.ui.dispose();
+  assert.equal(c.id('console-menu').open, false);
+  click(c.id('menu-button'));
+  assert.equal(c.id('console-menu').open, false);
 });
 
 test('Disposing detaches every listener, so a remount cannot double-handle a click', (t) => {

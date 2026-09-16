@@ -4,7 +4,7 @@
  * The component owns the field; parsing, clamping and classification stay in
  * `core/money.js`, and only the wording lives here.
  */
-import { DEFAULT_BET } from '../../config/gameplay.js';
+import { DEFAULT_BET, MIN_BET } from '../../config/gameplay.js';
 import { clampBet, formatBetInput, getBetError, parseBet } from '../../core/money.js';
 import { BET_ERRORS } from '../labels.js';
 import { fieldsetEl, el, inputEl, queryAll } from '../dom.js';
@@ -53,7 +53,11 @@ export function createBetControls({ game, on, onRequestRender }) {
           ? Math.floor(current / 2)
           : button.dataset.bet === 'double'
             ? current * 2
-            : s.balance;
+            : button.dataset.bet === 'decrease'
+              ? current - MIN_BET
+              : button.dataset.bet === 'increase'
+                ? current + MIN_BET
+                : s.balance;
       const amount = clampBet(requested, s.balance);
       input.value = formatBetInput(amount);
       validate(true);

@@ -6,5 +6,19 @@ playwright-report/
 test-results/
 .playwright/
 
-# Memoria di lavoro locale: non pubblicare su GitHub.
-/PROJECT_MEMORY.local.md
+# Memoria, appunti e configurazione degli agenti: solo locali.
+*.local.md
+.agents/
+.codex/
+
+# Credenziali e configurazione privata.
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
